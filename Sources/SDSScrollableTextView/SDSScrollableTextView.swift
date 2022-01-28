@@ -95,7 +95,6 @@ public struct SDSScrollableTextView: NSViewRepresentable {
 
         let textContentStorage = NSTextContentStorage()
         textContentStorage.addTextLayoutManager(textLayoutManager)
-        textContentStorage.textStorage?.setAttributedString(NSAttributedString(string: text))
         textContentStorage.delegate = textContentStorageDelegate
 
         // textview
@@ -109,6 +108,8 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         textView.maxSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
         textView.isVerticallyResizable = true
         textView.isHorizontallyResizable = false // does not need to expand/shrink without view size change
+
+        textContentStorage.textStorage?.setAttributedString(NSAttributedString(string: text))
 
         // NSTextView のサイズを自動で広げてくれる(TextContainer は広げてくれない)
         // .height は、新しい行が追加された時に TextView が広がるために必要
