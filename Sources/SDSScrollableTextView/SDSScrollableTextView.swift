@@ -98,7 +98,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         textContentStorage.delegate = textContentStorageDelegate
 
         // textview
-        let textView = NSTextView(frame: rect, textContainer: textContainer)
+        let textView = MyNSTextView(frame: rect, textContainer: textContainer)//NSTextView(frame: rect, textContainer: textContainer)
         textView.textStorage?.delegate = textStorageDelegate
         textView.delegate = context.coordinator
         textView.isEditable = true
@@ -187,7 +187,16 @@ public struct SDSScrollableTextView: NSViewRepresentable {
             self.parent.text = textView.string
         }
     }
-    
-    
+}
+
+open class MyNSTextView: NSTextView {
+    override open func keyDown(with event: NSEvent) {
+        if event.modifierFlags.contains(NSEvent.ModifierFlags.control) &&
+            event.keyCode == 0x25 {
+            print("ignore Ctrl-L")
+            return
+        }
+        super.keyDown(with: event)
+    }
 }
 
