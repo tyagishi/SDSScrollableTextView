@@ -102,6 +102,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         textView.textStorage?.delegate = textStorageDelegate
         textView.delegate = context.coordinator
         textView.isEditable = true
+        textView.allowsUndo = true
         
         //textView.backgroundColor = .blue
         textView.minSize = CGSize(width: 0, height: rect.height)
