@@ -17,13 +17,13 @@ public class TextEditorControl: ObservableObject {
 }
 public struct SDSPushOutScrollableTextView: View {
     @Binding var text: String
-    let control: TextEditorControl
+    let control: TextEditorControl?
     let textContentStorageDelegate: NSTextContentStorageDelegate?
     let textStorageDelegate: NSTextStorageDelegate?
     let textLayoutManagerDelegate: NSTextLayoutManagerDelegate?
     
     public init(text: Binding<String>,
-                control: TextEditorControl,
+                control: TextEditorControl? = nil,
                 textContentStorageDelegate: NSTextContentStorageDelegate? = nil,
                 textStorageDelegate: NSTextStorageDelegate? = nil, textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil ) {
         self._text = text
@@ -50,7 +50,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     public typealias NSViewType = NSScrollView
     
     @Binding var text: String
-    @ObservedObject var control: TextEditorControl
+    var control: TextEditorControl?
     let rect: CGRect
     
     let textContentStorageDelegate: NSTextContentStorageDelegate?
@@ -59,7 +59,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     var textKit1Check: AnyCancellable? = nil
 
     public init(text: Binding<String>,
-                control: TextEditorControl,
+                control: TextEditorControl? = nil,
                 rect: CGRect, textContentStorageDelegate: NSTextContentStorageDelegate? = nil,
                 textStorageDelegate: NSTextStorageDelegate? = nil, textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil ) {
         self._text = text
@@ -164,13 +164,13 @@ public struct SDSScrollableTextView: NSViewRepresentable {
                 textStorage.setAttributedString(NSAttributedString(string: text))
             }
             DispatchQueue.main.async {
-                if self.control.firstResponder == true {
+                if self.control?.firstResponder == true {
                     textView.window?.makeFirstResponder(textView)
-                    self.control.firstResponder = false
+                    self.control?.firstResponder = false
                 }
-                if let focusRange = self.control.focusRange {
+                if let focusRange = self.control?.focusRange {
                     textView.scrollRangeToVisible(focusRange)
-                    self.control.focusRange = nil
+                    self.control?.focusRange = nil
                 }
             }
         }
