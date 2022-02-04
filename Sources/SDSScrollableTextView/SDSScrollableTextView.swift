@@ -22,16 +22,19 @@ public struct SDSPushOutScrollableTextView: View {
     let textContentStorageDelegate: NSTextContentStorageDelegate?
     let textStorageDelegate: NSTextStorageDelegate?
     let textLayoutManagerDelegate: NSTextLayoutManagerDelegate?
-    
+    let keyDownClosure: ((NSEvent) -> Bool)?
+
     public init(text: Binding<String>,
                 control: TextEditorControl? = nil,
                 textContentStorageDelegate: NSTextContentStorageDelegate? = nil,
-                textStorageDelegate: NSTextStorageDelegate? = nil, textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil ) {
+                textStorageDelegate: NSTextStorageDelegate? = nil, textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil,
+                keydownClosure: ((NSEvent)->Bool)? = nil ) {
         self._text = text
         self.control = control
         self.textContentStorageDelegate = textContentStorageDelegate
         self.textStorageDelegate = textStorageDelegate
         self.textLayoutManagerDelegate = textLayoutManagerDelegate
+        self.keyDownClosure = keydownClosure
     }
 
     public var body: some View {
@@ -41,7 +44,8 @@ public struct SDSPushOutScrollableTextView: View {
                                   rect: geom.frame(in: .local),
                                   textContentStorageDelegate: textContentStorageDelegate,
                                   textStorageDelegate: textStorageDelegate,
-                                  textLayoutManagerDelegate: textLayoutManagerDelegate)
+                                  textLayoutManagerDelegate: textLayoutManagerDelegate,
+                                  keydownClosure: keyDownClosure)
 
         }
     }
@@ -58,17 +62,20 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     let textStorageDelegate: NSTextStorageDelegate?
     let textLayoutManagerDelegate: NSTextLayoutManagerDelegate?
     var textKit1Check: AnyCancellable? = nil
+    let keyDownClosure: ((NSEvent) -> Bool)?
 
     public init(text: Binding<String>,
                 control: TextEditorControl? = nil,
                 rect: CGRect, textContentStorageDelegate: NSTextContentStorageDelegate? = nil,
-                textStorageDelegate: NSTextStorageDelegate? = nil, textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil ) {
+                textStorageDelegate: NSTextStorageDelegate? = nil, textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil,
+                keydownClosure: ((NSEvent)->Bool)? = nil ) {
         self._text = text
         self.control = control
         self.rect = rect
         self.textContentStorageDelegate = textContentStorageDelegate
         self.textStorageDelegate = textStorageDelegate
         self.textLayoutManagerDelegate = textLayoutManagerDelegate
+        self.keyDownClosure = keydownClosure
 
         textKit1Check = NotificationCenter.default.publisher(for: NSTextView.didSwitchToNSLayoutManagerNotification)
             .sink { value in
@@ -99,7 +106,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         textContentStorage.delegate = textContentStorageDelegate
 
         // textview
-        let textView = MyNSTextView(frame: rect, textContainer: textContainer)//NSTextView(frame: rect, textContainer: textContainer)
+        let textView = MyNSTextView(frame: rect, textContainer: textContainer, keyDown: keyDownClosure)//NSTextView(frame: rect, textContainer: textContainer)
         textView.textStorage?.delegate = textStorageDelegate
         textView.delegate = context.coordinator
         textView.isEditable = true
@@ -163,7 +170,6 @@ public struct SDSScrollableTextView: NSViewRepresentable {
                     textStorage.beginEditing()
                     textStorage.setAttributedString(NSAttributedString(string: text))
                     textStorage.endEditing()
-                    textView.didChangeText()
                 }
                 
                 if let insertText = self.control?.insertText,
@@ -198,21 +204,34 @@ public struct SDSScrollableTextView: NSViewRepresentable {
             guard let textView = notification.object as? NSTextView else { return }
             self.parent.text = textView.string
         }
+        
+        public func textView(_ view: NSTextView, menu: NSMenu, for event: NSEvent, at charIndex: Int) -> NSMenu? {
+            let menu = NSMenu(title: "Hello")
+            menu.addItem(withTitle: "world", action: nil, keyEquivalent: "")
+            return menu
+        }
     }
 }
 
 open class MyNSTextView: NSTextView {
+    let keyDownClosure: ((NSEvent) -> Bool)?
+    
+    init(frame: CGRect, textContainer: NSTextContainer, keyDown: ((NSEvent) -> Bool)? = nil ) {
+        self.keyDownClosure = keyDown
+        super.init(frame: frame, textContainer: textContainer)
+    }
+    
+    required public init?(coder: NSCoder) {
+        fatalError("not implemented")
+    }
+
     override open func keyDown(with event: NSEvent) {
-        if event.modifierFlags.contains(NSEvent.ModifierFlags.control) &&
-            event.keyCode == 0x25 {
-            print("ignore Ctrl-L")
-            return
-        } else if event.modifierFlags.contains(NSEvent.ModifierFlags.control) &&
-                    event.keyCode == 0x02 {
-            // key: D
-            print("insert Date")
-            return
+        if let closure = keyDownClosure {
+            if closure(event) {
+                return
+            }
         }
+
         super.keyDown(with: event)
     }
 }
