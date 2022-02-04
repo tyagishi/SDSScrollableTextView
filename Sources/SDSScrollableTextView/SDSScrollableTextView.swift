@@ -16,19 +16,22 @@ public class TextEditorControl: ObservableObject {
     @Published public var insertText: String? = nil
     public init() {}
 }
+public typealias keydownClosure = (NSTextView, NSEvent) -> Bool
+
 public struct SDSPushOutScrollableTextView: View {
     @Binding var text: String
     let control: TextEditorControl?
     let textContentStorageDelegate: NSTextContentStorageDelegate?
     let textStorageDelegate: NSTextStorageDelegate?
     let textLayoutManagerDelegate: NSTextLayoutManagerDelegate?
-    let keyDownClosure: ((NSEvent) -> Bool)?
+    let keyDownClosure: keydownClosure?
+
 
     public init(text: Binding<String>,
                 control: TextEditorControl? = nil,
                 textContentStorageDelegate: NSTextContentStorageDelegate? = nil,
                 textStorageDelegate: NSTextStorageDelegate? = nil, textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil,
-                keydownClosure: ((NSEvent)->Bool)? = nil ) {
+                keydownClosure: keydownClosure? = nil ) {
         self._text = text
         self.control = control
         self.textContentStorageDelegate = textContentStorageDelegate
@@ -62,13 +65,13 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     let textStorageDelegate: NSTextStorageDelegate?
     let textLayoutManagerDelegate: NSTextLayoutManagerDelegate?
     var textKit1Check: AnyCancellable? = nil
-    let keyDownClosure: ((NSEvent) -> Bool)?
+    let keyDownClosure: keydownClosure?
 
     public init(text: Binding<String>,
                 control: TextEditorControl? = nil,
                 rect: CGRect, textContentStorageDelegate: NSTextContentStorageDelegate? = nil,
                 textStorageDelegate: NSTextStorageDelegate? = nil, textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil,
-                keydownClosure: ((NSEvent)->Bool)? = nil ) {
+                keydownClosure: keydownClosure? = nil ) {
         self._text = text
         self.control = control
         self.rect = rect
@@ -214,9 +217,9 @@ public struct SDSScrollableTextView: NSViewRepresentable {
 }
 
 open class MyNSTextView: NSTextView {
-    let keyDownClosure: ((NSEvent) -> Bool)?
+    let keyDownClosure: keydownClosure?
     
-    init(frame: CGRect, textContainer: NSTextContainer, keyDown: ((NSEvent) -> Bool)? = nil ) {
+    init(frame: CGRect, textContainer: NSTextContainer, keyDown: keydownClosure? = nil ) {
         self.keyDownClosure = keyDown
         super.init(frame: frame, textContainer: textContainer)
     }
@@ -227,7 +230,7 @@ open class MyNSTextView: NSTextView {
 
     override open func keyDown(with event: NSEvent) {
         if let closure = keyDownClosure {
-            if closure(event) {
+            if closure(self, event) {
                 return
             }
         }
