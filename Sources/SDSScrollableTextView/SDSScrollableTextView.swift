@@ -13,6 +13,7 @@ import Combine
 public class TextEditorControl: ObservableObject {
     @Published public var firstResponder: Bool = false
     @Published public var focusRange: NSRange? = nil
+    @Published public var insertText: String? = nil
     public init() {}
 }
 public struct SDSPushOutScrollableTextView: View {
@@ -139,8 +140,6 @@ public struct SDSScrollableTextView: NSViewRepresentable {
             if let container = textView.textLayoutManager?.textContainer {
                 print("container Size: \(container.size)")
             }
-//            if let textStorage = textView.textStorage {
-//            }
         }
 
     }
@@ -159,9 +158,20 @@ public struct SDSScrollableTextView: NSViewRepresentable {
                 container.size.height = CGFloat.greatestFiniteMagnitude
             }
             // update view content
-            if let textStorage = textView.textStorage,
-               textStorage.string != text {
-                textStorage.setAttributedString(NSAttributedString(string: text))
+            if let textStorage = textView.textStorage {
+                if textStorage.string != text {
+                    textStorage.beginEditing()
+                    textStorage.setAttributedString(NSAttributedString(string: text))
+                    textStorage.endEditing()
+                    textView.didChangeText()
+                }
+                
+                if let insertText = self.control?.insertText,
+                   let selection = textView.selectedRanges.first as? NSRange {
+                    textView.insertText(insertText, replacementRange: selection)
+                    self.control?.insertText = nil
+                }
+
             }
             DispatchQueue.main.async {
                 if self.control?.firstResponder == true {
@@ -196,6 +206,11 @@ open class MyNSTextView: NSTextView {
         if event.modifierFlags.contains(NSEvent.ModifierFlags.control) &&
             event.keyCode == 0x25 {
             print("ignore Ctrl-L")
+            return
+        } else if event.modifierFlags.contains(NSEvent.ModifierFlags.control) &&
+                    event.keyCode == 0x02 {
+            // key: D
+            print("insert Date")
             return
         }
         super.keyDown(with: event)
