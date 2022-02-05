@@ -10,17 +10,23 @@ import SwiftUI
 import AppKit
 import Combine
 
+public typealias MyOwnTextContentManager = NSTextContentManager & NSTextStorageObserving
+
 public class TextEditorControl: ObservableObject {
     @Published public var firstResponder: Bool = false
     @Published public var focusRange: NSRange? = nil
     @Published public var insertText: String? = nil
-    public init() {}
+    var textContentManager: NSTextContentManager
+    public init(_ contentManager: NSTextContentManager) {
+        textContentManager = contentManager
+    }
 }
 public typealias keydownClosure = (NSTextView, NSEvent) -> Bool
 
 public struct SDSPushOutScrollableTextView: View {
     @Binding var text: String
     let control: TextEditorControl?
+    let textContentManager: MyOwnTextContentManager?
     let textContentStorageDelegate: NSTextContentStorageDelegate?
     let textStorageDelegate: NSTextStorageDelegate?
     let textLayoutManagerDelegate: NSTextLayoutManagerDelegate?
@@ -29,11 +35,13 @@ public struct SDSPushOutScrollableTextView: View {
 
     public init(text: Binding<String>,
                 control: TextEditorControl? = nil,
+                textContentManager: MyOwnTextContentManager? = nil,
                 textContentStorageDelegate: NSTextContentStorageDelegate? = nil,
                 textStorageDelegate: NSTextStorageDelegate? = nil, textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil,
                 keydownClosure: keydownClosure? = nil ) {
         self._text = text
         self.control = control
+        self.textContentManager = textContentManager
         self.textContentStorageDelegate = textContentStorageDelegate
         self.textStorageDelegate = textStorageDelegate
         self.textLayoutManagerDelegate = textLayoutManagerDelegate
@@ -45,6 +53,7 @@ public struct SDSPushOutScrollableTextView: View {
             SDSScrollableTextView(text: $text,
                                   control: control,
                                   rect: geom.frame(in: .local),
+                                  textContentManager: textContentManager,
                                   textContentStorageDelegate: textContentStorageDelegate,
                                   textStorageDelegate: textStorageDelegate,
                                   textLayoutManagerDelegate: textLayoutManagerDelegate,
@@ -61,6 +70,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     var control: TextEditorControl?
     let rect: CGRect
     
+    let textContentManager: MyOwnTextContentManager?
     let textContentStorageDelegate: NSTextContentStorageDelegate?
     let textStorageDelegate: NSTextStorageDelegate?
     let textLayoutManagerDelegate: NSTextLayoutManagerDelegate?
@@ -69,12 +79,15 @@ public struct SDSScrollableTextView: NSViewRepresentable {
 
     public init(text: Binding<String>,
                 control: TextEditorControl? = nil,
-                rect: CGRect, textContentStorageDelegate: NSTextContentStorageDelegate? = nil,
+                rect: CGRect,
+                textContentManager: MyOwnTextContentManager? = nil,
+                textContentStorageDelegate: NSTextContentStorageDelegate? = nil,
                 textStorageDelegate: NSTextStorageDelegate? = nil, textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil,
                 keydownClosure: keydownClosure? = nil ) {
         self._text = text
         self.control = control
         self.rect = rect
+        self.textContentManager = textContentManager
         self.textContentStorageDelegate = textContentStorageDelegate
         self.textStorageDelegate = textStorageDelegate
         self.textLayoutManagerDelegate = textLayoutManagerDelegate
@@ -104,7 +117,8 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         textContainer.heightTracksTextView = true
         textLayoutManager.textContainer = textContainer
 
-        let textContentStorage = NSTextContentStorage()
+        let textContentStorage = context.coordinator.textContentManager
+        //let textContentStorage = NSTextContentStorage()
         textContentStorage.addTextLayoutManager(textLayoutManager)
         textContentStorage.delegate = textContentStorageDelegate
 
@@ -141,7 +155,8 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     }
     
     public func makeCoordinator() -> Coordinator {
-        return Coordinator(self)
+        
+        return Coordinator(self, self.textContentManager != nil ? self.textContentManager! : NSTextContentStorage())
     }
     
     func printSizes(_ scrollView: NSScrollView) {
@@ -199,8 +214,11 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     
     public class Coordinator: NSObject, NSTextViewDelegate {
         var parent: SDSScrollableTextView
-        init(_ parent: SDSScrollableTextView) {
+        var textContentManager: MyOwnTextContentManager
+
+        init(_ parent: SDSScrollableTextView,_ textContentManager: MyOwnTextContentManager) {
             self.parent = parent
+            self.textContentManager = textContentManager
         }
         
         public func textDidChange(_ notification: Notification) {
