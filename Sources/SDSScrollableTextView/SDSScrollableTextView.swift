@@ -209,8 +209,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         }
         
         public func textView(_ view: NSTextView, menu: NSMenu, for event: NSEvent, at charIndex: Int) -> NSMenu? {
-            let menu = NSMenu(title: "Hello")
-            menu.addItem(withTitle: "world", action: nil, keyEquivalent: "")
+            // iff necessary, need to insert my own menus into passed menu
             return menu
         }
     }
