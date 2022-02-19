@@ -16,10 +16,11 @@ public class TextEditorControl: ObservableObject {
     @Published public var firstResponder: Bool = false
     @Published public var focusRange: NSRange? = nil
     @Published public var insertText: String? = nil
-    var textContentManager: NSTextContentManager
-    public init(_ contentManager: NSTextContentManager) {
-        textContentManager = contentManager
-    }
+//    var textContentManager: NSTextContentManager
+//    public init(_ contentManager: NSTextContentManager) {
+//        textContentManager = contentManager
+//    }
+    public init() {}
 }
 public typealias keydownClosure = (NSTextView, NSEvent) -> Bool
 
