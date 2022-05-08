@@ -139,7 +139,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     }
     
     public func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        Self.logger.info("before updateNSView")
+        //Self.logger.info("before updateNSView")
         //printSizes(scrollView)
         if let textView = scrollView.documentView as? NSTextView {
             // update textView size
