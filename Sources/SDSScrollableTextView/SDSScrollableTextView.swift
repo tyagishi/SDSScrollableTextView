@@ -25,6 +25,12 @@ public class TextEditorControl: ObservableObject {
 }
 public typealias keydownClosure = (NSTextView, NSEvent) -> Bool
 
+public struct TextEditorDelegates {
+    var textContentStorageDelegate: NSTextContentStorageDelegate? = nil
+    var textStorageDelegate: NSTextStorageDelegate? = nil
+    var textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil
+    var textViewportLayoutControllerDelegate: NSTextViewportLayoutControllerDelegate? = nil
+}
 public protocol TextEditorSource: NSTextContentStorageDelegate, NSTextStorageDelegate,
                                   NSTextLayoutManagerDelegate, NSTextViewportLayoutControllerDelegate {
     var text: String {get set}
