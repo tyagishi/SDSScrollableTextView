@@ -9,6 +9,7 @@ import Foundation
 import SwiftUI
 import AppKit
 import Combine
+import os
 
 public typealias MyOwnTextContentManager = NSTextContentManager & NSTextStorageObserving
 
@@ -24,12 +25,14 @@ public class TextEditorControl: ObservableObject {
 }
 public typealias keydownClosure = (NSTextView, NSEvent) -> Bool
 
-public protocol TextEditorSource: NSTextContentStorageDelegate, NSTextStorageDelegate, NSTextLayoutManagerDelegate {
+public protocol TextEditorSource: NSTextContentStorageDelegate, NSTextStorageDelegate,
+                                  NSTextLayoutManagerDelegate, NSTextViewportLayoutControllerDelegate {
     var text: String {get set}
 }
 
 public struct SDSScrollableTextView: NSViewRepresentable {
     public typealias NSViewType = NSScrollView
+    static let logger = Logger(subsystem: "com.smalldesksoftware.SDSScrollableTextView", category: "SDSScrollableTextView")
     
     var textEditorSource: TextEditorSource
     var control: TextEditorControl?
@@ -54,11 +57,11 @@ public struct SDSScrollableTextView: NSViewRepresentable {
             .sink { value in
                 print("receive didSwitchToNSLayoutManagerNotification with \(value)")
             }
-        print("init")
+        //print("init")
     }
     
     public func makeNSView(context: Context) -> NSScrollView {
-        print("makeNSView")
+        //print("makeNSView")
         // scrollview setup
         let scrollView = NSScrollView(frame: rect)
         scrollView.borderType = .lineBorder
@@ -69,6 +72,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         // setup TextlayoutManager
         let textLayoutManager = NSTextLayoutManager()
         textLayoutManager.delegate = textEditorSource
+        textLayoutManager.textViewportLayoutController.delegate = textEditorSource
 
         // setup TextContainer
         let textContainer = NSTextContainer(size: CGSize( width: rect.size.width, height: CGFloat.greatestFiniteMagnitude))
@@ -129,7 +133,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     }
     
     public func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        print("before updateNSView")
+        Self.logger.info("before updateNSView")
         //printSizes(scrollView)
         if let textView = scrollView.documentView as? NSTextView {
             // update textView size
@@ -147,6 +151,10 @@ public struct SDSScrollableTextView: NSViewRepresentable {
                     textStorage.beginEditing()
                     textStorage.setAttributedString(NSAttributedString(string: textEditorSource.text))
                     textStorage.endEditing()
+                } else {
+                    textStorage.beginEditing()
+                    textStorage.processEditing()
+                    textStorage.endEditing()
                 }
                 
                 if let insertText = self.control?.insertText,
@@ -156,6 +164,8 @@ public struct SDSScrollableTextView: NSViewRepresentable {
                 }
 
             }
+            textView.needsDisplay = true
+            textView.needsLayout = true
             DispatchQueue.main.async {
                 if self.control?.firstResponder == true {
                     textView.window?.makeFirstResponder(textView)
