@@ -24,83 +24,41 @@ public class TextEditorControl: ObservableObject {
 }
 public typealias keydownClosure = (NSTextView, NSEvent) -> Bool
 
-public struct SDSPushOutScrollableTextView: View {
-    @Binding var text: String
-    let control: TextEditorControl?
-    let textContentManager: MyOwnTextContentManager?
-    let textContentStorageDelegate: NSTextContentStorageDelegate?
-    let textStorageDelegate: NSTextStorageDelegate?
-    let textLayoutManagerDelegate: NSTextLayoutManagerDelegate?
-    let keyDownClosure: keydownClosure?
-
-
-    public init(text: Binding<String>,
-                control: TextEditorControl? = nil,
-                textContentManager: MyOwnTextContentManager? = nil,
-                textContentStorageDelegate: NSTextContentStorageDelegate? = nil,
-                textStorageDelegate: NSTextStorageDelegate? = nil, textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil,
-                keydownClosure: keydownClosure? = nil ) {
-        self._text = text
-        self.control = control
-        self.textContentManager = textContentManager
-        self.textContentStorageDelegate = textContentStorageDelegate
-        self.textStorageDelegate = textStorageDelegate
-        self.textLayoutManagerDelegate = textLayoutManagerDelegate
-        self.keyDownClosure = keydownClosure
-    }
-
-    public var body: some View {
-        GeometryReader { geom in
-            SDSScrollableTextView(text: $text,
-                                  control: control,
-                                  rect: geom.frame(in: .local),
-                                  textContentManager: textContentManager,
-                                  textContentStorageDelegate: textContentStorageDelegate,
-                                  textStorageDelegate: textStorageDelegate,
-                                  textLayoutManagerDelegate: textLayoutManagerDelegate,
-                                  keydownClosure: keyDownClosure)
-
-        }
-    }
+public protocol TextEditorSource: NSTextContentStorageDelegate, NSTextStorageDelegate, NSTextLayoutManagerDelegate {
+    var text: String {get set}
 }
 
 public struct SDSScrollableTextView: NSViewRepresentable {
     public typealias NSViewType = NSScrollView
     
-    @Binding var text: String
+    var textEditorSource: TextEditorSource
     var control: TextEditorControl?
     let rect: CGRect
     
     let textContentManager: MyOwnTextContentManager?
-    let textContentStorageDelegate: NSTextContentStorageDelegate?
-    let textStorageDelegate: NSTextStorageDelegate?
-    let textLayoutManagerDelegate: NSTextLayoutManagerDelegate?
     var textKit1Check: AnyCancellable? = nil
     let keyDownClosure: keydownClosure?
 
-    public init(text: Binding<String>,
+    public init(_ textEditorSource: TextEditorSource,
                 control: TextEditorControl? = nil,
                 rect: CGRect,
                 textContentManager: MyOwnTextContentManager? = nil,
-                textContentStorageDelegate: NSTextContentStorageDelegate? = nil,
-                textStorageDelegate: NSTextStorageDelegate? = nil, textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil,
                 keydownClosure: keydownClosure? = nil ) {
-        self._text = text
+        self.textEditorSource = textEditorSource
         self.control = control
         self.rect = rect
         self.textContentManager = textContentManager
-        self.textContentStorageDelegate = textContentStorageDelegate
-        self.textStorageDelegate = textStorageDelegate
-        self.textLayoutManagerDelegate = textLayoutManagerDelegate
         self.keyDownClosure = keydownClosure
 
         textKit1Check = NotificationCenter.default.publisher(for: NSTextView.didSwitchToNSLayoutManagerNotification)
             .sink { value in
                 print("receive didSwitchToNSLayoutManagerNotification with \(value)")
             }
+        print("init")
     }
     
     public func makeNSView(context: Context) -> NSScrollView {
+        print("makeNSView")
         // scrollview setup
         let scrollView = NSScrollView(frame: rect)
         scrollView.borderType = .lineBorder
@@ -110,7 +68,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         
         // setup TextlayoutManager
         let textLayoutManager = NSTextLayoutManager()
-        textLayoutManager.delegate = textLayoutManagerDelegate
+        textLayoutManager.delegate = textEditorSource
 
         // setup TextContainer
         let textContainer = NSTextContainer(size: CGSize( width: rect.size.width, height: CGFloat.greatestFiniteMagnitude))
@@ -121,11 +79,11 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         let textContentStorage = context.coordinator.textContentManager
         //let textContentStorage = NSTextContentStorage()
         textContentStorage.addTextLayoutManager(textLayoutManager)
-        textContentStorage.delegate = textContentStorageDelegate
+        textContentStorage.delegate = textEditorSource
 
         // textview
         let textView = MyNSTextView(frame: rect, textContainer: textContainer, keyDown: keyDownClosure)//NSTextView(frame: rect, textContainer: textContainer)
-        textView.textStorage?.delegate = textStorageDelegate
+        textView.textStorage?.delegate = textEditorSource
         textView.delegate = context.coordinator
         textView.isEditable = true
         textView.allowsUndo = true
@@ -138,7 +96,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         textView.isVerticallyResizable = true
         textView.isHorizontallyResizable = false // does not need to expand/shrink without view size change
 
-        textContentStorage.textStorage?.setAttributedString(NSAttributedString(string: text))
+        textContentStorage.textStorage?.setAttributedString(NSAttributedString(string: textEditorSource.text))
 
         // NSTextView のサイズを自動で広げてくれる(TextContainer は広げてくれない)
         // .height は、新しい行が追加された時に TextView が広がるために必要
@@ -171,7 +129,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     }
     
     public func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        //print("before updateNSView")
+        print("before updateNSView")
         //printSizes(scrollView)
         if let textView = scrollView.documentView as? NSTextView {
             // update textView size
@@ -185,9 +143,9 @@ public struct SDSScrollableTextView: NSViewRepresentable {
             }
             // update view content
             if let textStorage = textView.textStorage {
-                if textStorage.string != text {
+                if textStorage.string != textEditorSource.text {
                     textStorage.beginEditing()
-                    textStorage.setAttributedString(NSAttributedString(string: text))
+                    textStorage.setAttributedString(NSAttributedString(string: textEditorSource.text))
                     textStorage.endEditing()
                 }
                 
@@ -224,7 +182,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         
         public func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
-            self.parent.text = textView.string
+            self.parent.textEditorSource.text = textView.string
         }
         
         public func textView(_ view: NSTextView, menu: NSMenu, for event: NSEvent, at charIndex: Int) -> NSMenu? {
@@ -257,3 +215,31 @@ open class MyNSTextView: NSTextView {
     }
 }
 
+public struct SDSPushOutScrollableTextView: View {
+    var textEditorSource: TextEditorSource
+    let control: TextEditorControl?
+    let textContentManager: MyOwnTextContentManager?
+    let keyDownClosure: keydownClosure?
+
+
+    public init(_ textEditorSource: TextEditorSource,
+                control: TextEditorControl? = nil,
+                textContentManager: MyOwnTextContentManager? = nil,
+                keydownClosure: keydownClosure? = nil ) {
+        self.textEditorSource = textEditorSource
+        self.control = control
+        self.textContentManager = textContentManager
+        self.keyDownClosure = keydownClosure
+    }
+
+    public var body: some View {
+        GeometryReader { geom in
+            SDSScrollableTextView(textEditorSource,
+                                  control: control,
+                                  rect: geom.frame(in: .local),
+                                  textContentManager: textContentManager,
+                                  keydownClosure: keyDownClosure)
+
+        }
+    }
+}
