@@ -106,6 +106,8 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         textView.isVerticallyResizable = true
         textView.isHorizontallyResizable = false // does not need to expand/shrink without view size change
 
+        textLayoutManager.textViewportLayoutController.delegate = textView
+
         textContentStorage.textStorage?.setAttributedString(NSAttributedString(string: textEditorSource.text))
 
         // NSTextView のサイズを自動で広げてくれる(TextContainer は広げてくれない)
@@ -139,7 +141,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     }
     
     public func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        //Self.logger.info("before updateNSView")
+        Self.logger.info("before updateNSView")
         //printSizes(scrollView)
         if let textView = scrollView.documentView as? NSTextView {
             // update textView size
@@ -209,11 +211,18 @@ public struct SDSScrollableTextView: NSViewRepresentable {
 }
 
 open class MyNSTextView: NSTextView {
+    private var fragmentLayerMap: NSMapTable<NSTextLayoutFragment, CALayer> = .weakToWeakObjects()
+    private var contentLayer: CALayer! = nil
+    
+
     let keyDownClosure: keydownClosure?
     
     init(frame: CGRect, textContainer: NSTextContainer, keyDown: keydownClosure? = nil ) {
         self.keyDownClosure = keyDown
         super.init(frame: frame, textContainer: textContainer)
+        self.wantsLayer = true
+        self.contentLayer = CALayer()
+        layer?.addSublayer(contentLayer)
     }
     
     required public init?(coder: NSCoder) {
@@ -228,6 +237,154 @@ open class MyNSTextView: NSTextView {
         }
 
         super.keyDown(with: event)
+    }
+}
+
+extension MyNSTextView: NSTextViewportLayoutControllerDelegate {
+    public func viewportBounds(for textViewportLayoutController: NSTextViewportLayoutController) -> CGRect {
+        return bounds
+        // TODO: too unstable
+//        let overdrawRect = preparedContentRect
+//        let visibleRect = self.visibleRect
+//        var minY: CGFloat = 0
+//        var maxY: CGFloat = 0
+//        if overdrawRect.intersects(visibleRect) {
+//            // Use preparedContentRect for vertical overdraw and ensure visibleRect is included at the minimum,
+//            // the width is always bounds width for proper line wrapping.
+//            minY = min(overdrawRect.minY, max(visibleRect.minY, 0))
+//            maxY = max(overdrawRect.maxY, visibleRect.maxY)
+//        } else {
+//            // We use visible rect directly if preparedContentRect does not intersect.
+//            // This can happen if overdraw has not caught up with scrolling yet, such as before the first layout.
+//            minY = visibleRect.minY
+//            maxY = visibleRect.maxY
+//        }
+//        return CGRect(x: bounds.minX, y: minY, width: bounds.width, height: maxY - minY)
+    }
+    
+    public func textViewportLayoutControllerWillLayout(_ controller: NSTextViewportLayoutController) {
+        contentLayer.sublayers = nil
+        CATransaction.begin()
+    }
+    
+    public func textViewportLayoutControllerDidLayout(_ controller: NSTextViewportLayoutController) {
+        CATransaction.commit()
+        //updateSelectionHighlights()
+        updateContentSizeIfNeeded()
+        adjustViewportOffsetIfNeeded()
+    }
+    
+    private func findOrCreateLayer(_ textLayoutFragment: NSTextLayoutFragment) -> (TextLayoutFragmentLayer, Bool) {
+        if let layer = fragmentLayerMap.object(forKey: textLayoutFragment) as? TextLayoutFragmentLayer {
+            return (layer, false)
+        } else {
+            let layer = TextLayoutFragmentLayer(layoutFragment: textLayoutFragment, padding: 5.0)
+            fragmentLayerMap.setObject(layer, forKey: textLayoutFragment)
+            return (layer, true)
+        }
+    }
+    
+    public func textViewportLayoutController(_ controller: NSTextViewportLayoutController,
+                                      configureRenderingSurfaceFor textLayoutFragment: NSTextLayoutFragment) {
+        let (layer, layerIsNew) = findOrCreateLayer(textLayoutFragment)
+        if !layerIsNew {
+            let oldPosition = layer.position
+            let oldBounds = layer.bounds
+            layer.updateGeometry()
+            if oldBounds != layer.bounds {
+                layer.setNeedsDisplay()
+            }
+            if oldPosition != layer.position {
+                animate(layer, from: oldPosition, to: layer.position)
+            }
+        }
+        //layer.setNeedsDisplay()
+        contentLayer.addSublayer(layer)
+    }
+    
+    private func animate(_ layer: CALayer, from source: CGPoint, to destination: CGPoint) {
+        let animation = CABasicAnimation(keyPath: "position")
+        animation.fromValue = source
+        animation.toValue = destination
+        animation.duration = 0.3
+        layer.add(animation, forKey: nil)
+    }
+    
+//    private func updateSelectionHighlights() {
+//        if !textLayoutManager!.textSelections.isEmpty {
+//            selectionLayer.sublayers = nil
+//            for textSelection in textLayoutManager!.textSelections {
+//                for textRange in textSelection.textRanges {
+//                    textLayoutManager!.enumerateTextSegments(in: textRange,
+//                                                             type: .highlight,
+//                                                             options: []) {(textSegmentRange, textSegmentFrame, baselinePosition, textContainer) in
+//                        var highlightFrame = textSegmentFrame
+//                        highlightFrame.origin.x += padding
+//                        let highlight = TextDocumentLayer()
+//                        if highlightFrame.size.width > 0 {
+//                            highlight.backgroundColor = selectionColor.cgColor
+//                        } else {
+//                            highlightFrame.size.width = 1 // Fatten up the cursor.
+//                            highlight.backgroundColor = caretColor.cgColor
+//                        }
+//                        highlight.frame = highlightFrame
+//                        selectionLayer.addSublayer(highlight)
+//                        return true // Keep going.
+//                    }
+//                }
+//            }
+//        }
+//    }
+    func updateContentSizeIfNeeded() {
+        let currentHeight = bounds.height
+        var height: CGFloat = 0
+        textLayoutManager!.enumerateTextLayoutFragments(from: textLayoutManager!.documentRange.endLocation,
+                                                        options: [.reverse, .ensuresLayout]) { layoutFragment in
+            height = layoutFragment.layoutFragmentFrame.maxY
+            return false // stop
+        }
+        height = max(height, enclosingScrollView?.contentSize.height ?? 0)
+        if abs(currentHeight - height) > 1e-10 {
+            let contentSize = NSSize(width: self.bounds.width, height: height)
+            setFrameSize(contentSize)
+        }
+    }
+    
+    private var scrollView: NSScrollView? {
+        guard let result = enclosingScrollView else { return nil }
+        if result.documentView == self {
+            return result
+        } else {
+            return nil
+        }
+    }
+
+    private func adjustViewportOffsetIfNeeded() {
+        let viewportLayoutController = textLayoutManager!.textViewportLayoutController
+        let contentOffset = scrollView!.contentView.bounds.minY
+        if contentOffset < scrollView!.contentView.bounds.height &&
+            viewportLayoutController.viewportRange!.location.compare(textLayoutManager!.documentRange.location) == .orderedDescending {
+            // Nearing top, see if we need to adjust and make room above.
+            adjustViewportOffset()
+        } else if viewportLayoutController.viewportRange!.location.compare(textLayoutManager!.documentRange.location) == .orderedSame {
+            // At top, see if we need to adjust and reduce space above.
+            adjustViewportOffset()
+        }
+    }
+    
+    private func adjustViewportOffset() {
+        let viewportLayoutController = textLayoutManager!.textViewportLayoutController
+        var layoutYPoint: CGFloat = 0
+        textLayoutManager!.enumerateTextLayoutFragments(from: viewportLayoutController.viewportRange!.location,
+                                                        options: [.reverse, .ensuresLayout]) { layoutFragment in
+            layoutYPoint = layoutFragment.layoutFragmentFrame.origin.y
+            return true
+        }
+        if layoutYPoint != 0 {
+            let adjustmentDelta = bounds.minY - layoutYPoint
+            viewportLayoutController.adjustViewport(byVerticalOffset: adjustmentDelta)
+            scroll(CGPoint(x: scrollView!.contentView.bounds.minX, y: scrollView!.contentView.bounds.minY + adjustmentDelta))
+        }
     }
 }
 
@@ -257,5 +414,62 @@ public struct SDSPushOutScrollableTextView: View {
                                   keydownClosure: keyDownClosure)
 
         }
+    }
+}
+
+class TextLayoutFragmentLayer: CALayer {
+    var layoutFragment: NSTextLayoutFragment!
+    var padding: CGFloat
+    var showLayerFrames: Bool
+    
+    let strokeWidth: CGFloat = 2
+    
+    override class func defaultAction(forKey: String) -> CAAction? {
+        // Suppress default opacity animations.
+        return NSNull()
+    }
+
+    func updateGeometry() {
+        bounds = layoutFragment.renderingSurfaceBounds
+        if showLayerFrames {
+            var typographicBounds = layoutFragment.layoutFragmentFrame
+            typographicBounds.origin = .zero
+            bounds = bounds.union(typographicBounds)
+        }
+        // The (0, 0) point in layer space should be the anchor point.
+        anchorPoint = CGPoint(x: -bounds.origin.x / bounds.size.width, y: -bounds.origin.y / bounds.size.height)
+        position = layoutFragment.layoutFragmentFrame.origin
+        //position.x += padding
+    }
+    
+    init(layoutFragment: NSTextLayoutFragment, padding: CGFloat) {
+        self.layoutFragment = layoutFragment
+        self.padding = padding
+        showLayerFrames = false
+        super.init()
+        contentsScale = 2
+        updateGeometry()
+        setNeedsDisplay()
+    }
+    
+    override init(layer: Any) {
+        let tlfLayer = layer as! TextLayoutFragmentLayer
+        layoutFragment = tlfLayer.layoutFragment
+        padding = tlfLayer.padding
+        showLayerFrames = tlfLayer.showLayerFrames
+        super.init(layer: layer)
+        updateGeometry()
+        setNeedsDisplay()
+    }
+    
+    required init?(coder: NSCoder) {
+        layoutFragment = nil
+        padding = 0
+        showLayerFrames = false
+        super.init(coder: coder)
+    }
+    
+    override func draw(in ctx: CGContext) {
+        layoutFragment.draw(at: .zero, in: ctx)
     }
 }
