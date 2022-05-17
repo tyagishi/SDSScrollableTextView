@@ -264,14 +264,14 @@ extension MyNSTextView: NSTextViewportLayoutControllerDelegate {
     
     public func textViewportLayoutControllerWillLayout(_ controller: NSTextViewportLayoutController) {
         contentLayer.sublayers = nil
-        CATransaction.begin()
+        //CATransaction.begin()
     }
     
     public func textViewportLayoutControllerDidLayout(_ controller: NSTextViewportLayoutController) {
-        CATransaction.commit()
+        //CATransaction.commit()
         //updateSelectionHighlights()
         updateContentSizeIfNeeded()
-        adjustViewportOffsetIfNeeded()
+        //adjustViewportOffsetIfNeeded()
     }
     
     private func findOrCreateLayer(_ textLayoutFragment: NSTextLayoutFragment) -> (TextLayoutFragmentLayer, Bool) {
@@ -298,7 +298,7 @@ extension MyNSTextView: NSTextViewportLayoutControllerDelegate {
                 animate(layer, from: oldPosition, to: layer.position)
             }
         }
-        //layer.setNeedsDisplay()
+        layer.setNeedsDisplay()
         contentLayer.addSublayer(layer)
     }
     
@@ -306,7 +306,7 @@ extension MyNSTextView: NSTextViewportLayoutControllerDelegate {
         let animation = CABasicAnimation(keyPath: "position")
         animation.fromValue = source
         animation.toValue = destination
-        animation.duration = 0.3
+        animation.duration = 0.0001
         layer.add(animation, forKey: nil)
     }
     
@@ -341,7 +341,7 @@ extension MyNSTextView: NSTextViewportLayoutControllerDelegate {
         textLayoutManager!.enumerateTextLayoutFragments(from: textLayoutManager!.documentRange.endLocation,
                                                         options: [.reverse, .ensuresLayout]) { layoutFragment in
             height = layoutFragment.layoutFragmentFrame.maxY
-            return false // stop
+            return false // stop, use lastsegment's maxY
         }
         height = max(height, enclosingScrollView?.contentSize.height ?? 0)
         if abs(currentHeight - height) > 1e-10 {
