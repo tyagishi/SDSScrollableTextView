@@ -264,14 +264,14 @@ extension MyNSTextView: NSTextViewportLayoutControllerDelegate {
     
     public func textViewportLayoutControllerWillLayout(_ controller: NSTextViewportLayoutController) {
         contentLayer.sublayers = nil
-        //CATransaction.begin()
+        CATransaction.begin()
     }
     
     public func textViewportLayoutControllerDidLayout(_ controller: NSTextViewportLayoutController) {
-        //CATransaction.commit()
+        CATransaction.commit()
         //updateSelectionHighlights()
         updateContentSizeIfNeeded()
-        //adjustViewportOffsetIfNeeded()
+        adjustViewportOffsetIfNeeded()
     }
     
     private func findOrCreateLayer(_ textLayoutFragment: NSTextLayoutFragment) -> (TextLayoutFragmentLayer, Bool) {
@@ -287,18 +287,19 @@ extension MyNSTextView: NSTextViewportLayoutControllerDelegate {
     public func textViewportLayoutController(_ controller: NSTextViewportLayoutController,
                                       configureRenderingSurfaceFor textLayoutFragment: NSTextLayoutFragment) {
         let (layer, layerIsNew) = findOrCreateLayer(textLayoutFragment)
-        if !layerIsNew {
-            let oldPosition = layer.position
-            let oldBounds = layer.bounds
-            layer.updateGeometry()
-            if oldBounds != layer.bounds {
-                layer.setNeedsDisplay()
-            }
-            if oldPosition != layer.position {
-                animate(layer, from: oldPosition, to: layer.position)
-            }
-        }
-        layer.setNeedsDisplay()
+//        layer.showLayerFrames = true
+//        if !layerIsNew {
+//            let oldPosition = layer.position
+//            let oldBounds = layer.bounds
+//            layer.updateGeometry()
+//            if oldBounds != layer.bounds {
+//                layer.setNeedsDisplay()
+//            }
+//            if oldPosition != layer.position {
+//                animate(layer, from: oldPosition, to: layer.position)
+//            }
+//        }
+//        layer.setNeedsDisplay()
         contentLayer.addSublayer(layer)
     }
     
@@ -424,10 +425,10 @@ class TextLayoutFragmentLayer: CALayer {
     
     let strokeWidth: CGFloat = 2
     
-    override class func defaultAction(forKey: String) -> CAAction? {
-        // Suppress default opacity animations.
-        return NSNull()
-    }
+//    override class func defaultAction(forKey: String) -> CAAction? {
+//        // Suppress default opacity animations.
+//        return NSNull()
+//    }
 
     func updateGeometry() {
         bounds = layoutFragment.renderingSurfaceBounds
@@ -445,31 +446,47 @@ class TextLayoutFragmentLayer: CALayer {
     init(layoutFragment: NSTextLayoutFragment, padding: CGFloat) {
         self.layoutFragment = layoutFragment
         self.padding = padding
-        showLayerFrames = false
+        showLayerFrames = true
         super.init()
         contentsScale = 2
         updateGeometry()
         setNeedsDisplay()
     }
-    
-    override init(layer: Any) {
-        let tlfLayer = layer as! TextLayoutFragmentLayer
-        layoutFragment = tlfLayer.layoutFragment
-        padding = tlfLayer.padding
-        showLayerFrames = tlfLayer.showLayerFrames
-        super.init(layer: layer)
-        updateGeometry()
-        setNeedsDisplay()
-    }
+
+    // MARK: looks NOT used
+//    override init(layer: Any) {
+//        let tlfLayer = layer as! TextLayoutFragmentLayer
+//        layoutFragment = tlfLayer.layoutFragment
+//        padding = tlfLayer.padding
+//        showLayerFrames = tlfLayer.showLayerFrames
+//        super.init(layer: layer)
+//        updateGeometry()
+//        setNeedsDisplay()
+//    }
     
     required init?(coder: NSCoder) {
         layoutFragment = nil
         padding = 0
-        showLayerFrames = false
+        showLayerFrames = true
         super.init(coder: coder)
     }
     
     override func draw(in ctx: CGContext) {
         layoutFragment.draw(at: .zero, in: ctx)
+        if showLayerFrames {
+            let inset = 0.5 * strokeWidth
+            // Draw rendering surface bounds.
+            ctx.setLineWidth(strokeWidth)
+            ctx.setStrokeColor(NSColor.systemOrange.cgColor)
+            ctx.setLineDash(phase: 0, lengths: []) // Solid line.
+            ctx.stroke(layoutFragment.renderingSurfaceBounds.insetBy(dx: inset, dy: inset))
+            
+            // Draw typographic bounds.
+            ctx.setStrokeColor(NSColor.systemPurple.cgColor)
+            ctx.setLineDash(phase: 0, lengths: [strokeWidth, strokeWidth]) // Square dashes.
+            var typographicBounds = layoutFragment.layoutFragmentFrame
+            typographicBounds.origin = .zero
+            ctx.stroke(typographicBounds.insetBy(dx: inset, dy: inset))
+        }
     }
 }
