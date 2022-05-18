@@ -300,6 +300,7 @@ extension MyNSTextView: NSTextViewportLayoutControllerDelegate {
 //            }
 //        }
 //        layer.setNeedsDisplay()
+        layer.updateGeometry()
         contentLayer.addSublayer(layer)
     }
     
@@ -454,15 +455,15 @@ class TextLayoutFragmentLayer: CALayer {
     }
 
     // MARK: looks NOT used
-//    override init(layer: Any) {
-//        let tlfLayer = layer as! TextLayoutFragmentLayer
-//        layoutFragment = tlfLayer.layoutFragment
-//        padding = tlfLayer.padding
-//        showLayerFrames = tlfLayer.showLayerFrames
-//        super.init(layer: layer)
-//        updateGeometry()
-//        setNeedsDisplay()
-//    }
+    override init(layer: Any) {
+        let tlfLayer = layer as! TextLayoutFragmentLayer
+        layoutFragment = tlfLayer.layoutFragment
+        padding = tlfLayer.padding
+        showLayerFrames = tlfLayer.showLayerFrames
+        super.init(layer: layer)
+        updateGeometry()
+        setNeedsDisplay()
+    }
     
     required init?(coder: NSCoder) {
         layoutFragment = nil
