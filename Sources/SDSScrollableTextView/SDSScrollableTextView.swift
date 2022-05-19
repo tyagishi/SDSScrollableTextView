@@ -213,7 +213,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
 open class MyNSTextView: NSTextView {
     private var fragmentLayerMap: NSMapTable<NSTextLayoutFragment, CALayer> = .weakToWeakObjects()
     private var contentLayer: CALayer! = nil
-    
+    private var selectionLayer: CALayer! = nil
 
     let keyDownClosure: keydownClosure?
     
@@ -221,10 +221,22 @@ open class MyNSTextView: NSTextView {
         self.keyDownClosure = keyDown
         super.init(frame: frame, textContainer: textContainer)
         self.wantsLayer = true
-        self.contentLayer = CALayer()
+        layer?.backgroundColor = .white
+        self.contentLayer = TextDocumentLayer()
+        self.selectionLayer = TextDocumentLayer()
+        layer?.addSublayer(selectionLayer)
         layer?.addSublayer(contentLayer)
+        //translatesAutoresizingMaskIntoConstraints = false
     }
     
+    open override var acceptsFirstResponder: Bool { return true }
+
+    open override func prepareContent(in rect: NSRect) {
+        layer!.setNeedsLayout()
+        super.prepareContent(in: rect)
+    }
+    open override class var isCompatibleWithResponsiveScrolling: Bool { return true }
+
     required public init?(coder: NSCoder) {
         fatalError("not implemented")
     }
@@ -240,7 +252,7 @@ open class MyNSTextView: NSTextView {
     }
 }
 
-extension MyNSTextView: NSTextViewportLayoutControllerDelegate {
+extension MyNSTextView: NSTextViewportLayoutControllerDelegate, CALayerDelegate{
     public func viewportBounds(for textViewportLayoutController: NSTextViewportLayoutController) -> CGRect {
         return bounds
         // TODO: too unstable
@@ -269,9 +281,9 @@ extension MyNSTextView: NSTextViewportLayoutControllerDelegate {
     
     public func textViewportLayoutControllerDidLayout(_ controller: NSTextViewportLayoutController) {
         CATransaction.commit()
-        //updateSelectionHighlights()
+        updateSelectionHighlights()
         updateContentSizeIfNeeded()
-        adjustViewportOffsetIfNeeded()
+        //adjustViewportOffsetIfNeeded()
     }
     
     private func findOrCreateLayer(_ textLayoutFragment: NSTextLayoutFragment) -> (TextLayoutFragmentLayer, Bool) {
@@ -305,38 +317,42 @@ extension MyNSTextView: NSTextViewportLayoutControllerDelegate {
     }
     
     private func animate(_ layer: CALayer, from source: CGPoint, to destination: CGPoint) {
-        let animation = CABasicAnimation(keyPath: "position")
-        animation.fromValue = source
-        animation.toValue = destination
-        animation.duration = 0.0001
-        layer.add(animation, forKey: nil)
+//        let animation = CABasicAnimation(keyPath: "position")
+//        animation.fromValue = source
+//        animation.toValue = destination
+//        animation.duration = 0.0001
+//        layer.add(animation, forKey: nil)
     }
     
-//    private func updateSelectionHighlights() {
-//        if !textLayoutManager!.textSelections.isEmpty {
-//            selectionLayer.sublayers = nil
-//            for textSelection in textLayoutManager!.textSelections {
-//                for textRange in textSelection.textRanges {
-//                    textLayoutManager!.enumerateTextSegments(in: textRange,
-//                                                             type: .highlight,
-//                                                             options: []) {(textSegmentRange, textSegmentFrame, baselinePosition, textContainer) in
-//                        var highlightFrame = textSegmentFrame
-//                        highlightFrame.origin.x += padding
-//                        let highlight = TextDocumentLayer()
-//                        if highlightFrame.size.width > 0 {
-//                            highlight.backgroundColor = selectionColor.cgColor
-//                        } else {
-//                            highlightFrame.size.width = 1 // Fatten up the cursor.
-//                            highlight.backgroundColor = caretColor.cgColor
-//                        }
-//                        highlight.frame = highlightFrame
-//                        selectionLayer.addSublayer(highlight)
-//                        return true // Keep going.
-//                    }
-//                }
-//            }
-//        }
-//    }
+    var selectionColor: NSColor { return NSColor.red }//selectedTextBackgroundColor.withAlphaComponent(0.2) }
+    var caretColor: NSColor { return .black }
+
+    
+    private func updateSelectionHighlights() {
+        if !textLayoutManager!.textSelections.isEmpty {
+            selectionLayer.sublayers = nil
+            for textSelection in textLayoutManager!.textSelections {
+                for textRange in textSelection.textRanges {
+                    textLayoutManager!.enumerateTextSegments(in: textRange,
+                                                             type: .highlight,
+                                                             options: []) {(textSegmentRange, textSegmentFrame, baselinePosition, textContainer) in
+                        var highlightFrame = textSegmentFrame
+                        //highlightFrame.origin.x += padding
+                        let highlight = TextDocumentLayer()
+                        if highlightFrame.size.width > 0 {
+                            highlight.backgroundColor = selectionColor.cgColor
+                        } else {
+                            highlightFrame.size.width = 1 // Fatten up the cursor.
+                            highlight.backgroundColor = caretColor.cgColor
+                        }
+                        highlight.frame = highlightFrame
+                        selectionLayer.addSublayer(highlight)
+                        return true // Keep going.
+                    }
+                }
+            }
+        }
+    }
     func updateContentSizeIfNeeded() {
         let currentHeight = bounds.height
         var height: CGFloat = 0
@@ -388,7 +404,54 @@ extension MyNSTextView: NSTextViewportLayoutControllerDelegate {
             scroll(CGPoint(x: scrollView!.contentView.bounds.minX, y: scrollView!.contentView.bounds.minY + adjustmentDelta))
         }
     }
+    
+    open override func setFrameSize(_ newSize: NSSize) {
+        //print(#function)
+        super.setFrameSize(newSize)
+        updateTextContainerSize()
+    }
+
+    private func updateTextContainerSize() {
+        //print(#function)
+        let textContainer = textLayoutManager!.textContainer
+        if textContainer != nil && textContainer!.size.width != bounds.width {
+            textContainer!.size = NSSize(width: bounds.size.width, height: 0)
+            layer?.setNeedsLayout()
+        }
+    }
+
+//    open override func mouseDown(with event: NSEvent) {
+//        print(#function)
+//        var point = convert(event.locationInWindow, from: nil)
+//        //point.x -= padding
+//        let nav = textLayoutManager!.textSelectionNavigation
+//
+//        textLayoutManager!.textSelections = nav.textSelections(interactingAt: point,
+//                                                               inContainerAt: textLayoutManager!.documentRange.location,
+//                                                               anchors: [],
+//                                                               modifiers: [],
+//                                                               selecting: true,
+//                                                               bounds: .zero)
+//        layer?.setNeedsLayout()
+//    }
+//
+//    open override func mouseDragged(with event: NSEvent) {
+//        print(#function)
+//        var point = convert(event.locationInWindow, from: nil)
+//        //point.x -= padding
+//        let nav = textLayoutManager!.textSelectionNavigation
+//
+//        textLayoutManager!.textSelections = nav.textSelections(interactingAt: point,
+//                                                               inContainerAt: textLayoutManager!.documentRange.location,
+//                                                               anchors: textLayoutManager!.textSelections,
+//                                                               modifiers: .extend,
+//                                                               selecting: true,
+//                                                               bounds: .zero)
+//        layer?.setNeedsLayout()
+//    }
+//
 }
+
 
 public struct SDSPushOutScrollableTextView: View {
     var textEditorSource: TextEditorSource
@@ -419,6 +482,14 @@ public struct SDSPushOutScrollableTextView: View {
     }
 }
 
+// MARK: CALayer
+class TextDocumentLayer: CALayer {
+//    override class func defaultAction(forKey event: String) -> CAAction? {
+//        // Suppress default animation of opacity when adding comment bubbles.
+//        return NSNull()
+//    }
+}
+
 class TextLayoutFragmentLayer: CALayer {
     var layoutFragment: NSTextLayoutFragment!
     var padding: CGFloat
@@ -426,10 +497,10 @@ class TextLayoutFragmentLayer: CALayer {
     
     let strokeWidth: CGFloat = 2
     
-//    override class func defaultAction(forKey: String) -> CAAction? {
-//        // Suppress default opacity animations.
-//        return NSNull()
-//    }
+    override class func defaultAction(forKey: String) -> CAAction? {
+        // Suppress default opacity animations.
+        return NSNull()
+    }
 
     func updateGeometry() {
         bounds = layoutFragment.renderingSurfaceBounds
@@ -474,7 +545,7 @@ class TextLayoutFragmentLayer: CALayer {
     
     override func draw(in ctx: CGContext) {
         layoutFragment.draw(at: .zero, in: ctx)
-        if showLayerFrames {
+        if showLayerFrames && false {
             let inset = 0.5 * strokeWidth
             // Draw rendering surface bounds.
             ctx.setLineWidth(strokeWidth)
