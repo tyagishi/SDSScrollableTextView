@@ -106,7 +106,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         textView.isVerticallyResizable = true
         textView.isHorizontallyResizable = false // does not need to expand/shrink without view size change
 
-        textLayoutManager.textViewportLayoutController.delegate = textView
+//        textLayoutManager.textViewportLayoutController.delegate = textView
 
         textContentStorage.textStorage?.setAttributedString(NSAttributedString(string: textEditorSource.text))
 
@@ -224,8 +224,8 @@ open class MyNSTextView: NSTextView {
         layer?.backgroundColor = .white
         self.contentLayer = TextDocumentLayer()
         self.selectionLayer = TextDocumentLayer()
-        layer?.addSublayer(selectionLayer)
         layer?.addSublayer(contentLayer)
+        layer?.addSublayer(selectionLayer)
         //translatesAutoresizingMaskIntoConstraints = false
     }
     
@@ -252,8 +252,9 @@ open class MyNSTextView: NSTextView {
     }
 }
 
-extension MyNSTextView: NSTextViewportLayoutControllerDelegate, CALayerDelegate{
+extension MyNSTextView: CALayerDelegate , NSTextViewportLayoutControllerDelegate {
     public func viewportBounds(for textViewportLayoutController: NSTextViewportLayoutController) -> CGRect {
+        print(#function)
         return bounds
         // TODO: too unstable
 //        let overdrawRect = preparedContentRect
@@ -273,19 +274,21 @@ extension MyNSTextView: NSTextViewportLayoutControllerDelegate, CALayerDelegate{
 //        }
 //        return CGRect(x: bounds.minX, y: minY, width: bounds.width, height: maxY - minY)
     }
-    
+
     public func textViewportLayoutControllerWillLayout(_ controller: NSTextViewportLayoutController) {
+//        print(#function)
         contentLayer.sublayers = nil
-        CATransaction.begin()
+//        CATransaction.begin()
     }
-    
+
     public func textViewportLayoutControllerDidLayout(_ controller: NSTextViewportLayoutController) {
-        CATransaction.commit()
+//        print(#function)
+//        CATransaction.commit()
         updateSelectionHighlights()
         updateContentSizeIfNeeded()
         //adjustViewportOffsetIfNeeded()
     }
-    
+
     private func findOrCreateLayer(_ textLayoutFragment: NSTextLayoutFragment) -> (TextLayoutFragmentLayer, Bool) {
         if let layer = fragmentLayerMap.object(forKey: textLayoutFragment) as? TextLayoutFragmentLayer {
             return (layer, false)
@@ -295,11 +298,11 @@ extension MyNSTextView: NSTextViewportLayoutControllerDelegate, CALayerDelegate{
             return (layer, true)
         }
     }
-    
+
     public func textViewportLayoutController(_ controller: NSTextViewportLayoutController,
                                       configureRenderingSurfaceFor textLayoutFragment: NSTextLayoutFragment) {
-        let (layer, layerIsNew) = findOrCreateLayer(textLayoutFragment)
-//        layer.showLayerFrames = true
+//        let (layer, layerIsNew) = findOrCreateLayer(textLayoutFragment)
+////        layer.showLayerFrames = true
 //        if !layerIsNew {
 //            let oldPosition = layer.position
 //            let oldBounds = layer.bounds
@@ -311,11 +314,11 @@ extension MyNSTextView: NSTextViewportLayoutControllerDelegate, CALayerDelegate{
 //                animate(layer, from: oldPosition, to: layer.position)
 //            }
 //        }
-//        layer.setNeedsDisplay()
-        layer.updateGeometry()
+        let layer = TextLayoutFragmentLayer(layoutFragment: textLayoutFragment, padding: 0.0)
+        layer.setNeedsDisplay()
         contentLayer.addSublayer(layer)
     }
-    
+
     private func animate(_ layer: CALayer, from source: CGPoint, to destination: CGPoint) {
 //        let animation = CABasicAnimation(keyPath: "position")
 //        animation.fromValue = source
@@ -323,13 +326,14 @@ extension MyNSTextView: NSTextViewportLayoutControllerDelegate, CALayerDelegate{
 //        animation.duration = 0.0001
 //        layer.add(animation, forKey: nil)
     }
-    
+
     var selectionColor: NSColor { return NSColor.red }//selectedTextBackgroundColor.withAlphaComponent(0.2) }
     var caretColor: NSColor { return .black }
 
     
     private func updateSelectionHighlights() {
         if !textLayoutManager!.textSelections.isEmpty {
+            print("selection is NOT empty")
             selectionLayer.sublayers = nil
             for textSelection in textLayoutManager!.textSelections {
                 for textRange in textSelection.textRanges {
@@ -346,7 +350,7 @@ extension MyNSTextView: NSTextViewportLayoutControllerDelegate, CALayerDelegate{
                             highlight.backgroundColor = caretColor.cgColor
                         }
                         highlight.frame = highlightFrame
-                        selectionLayer.addSublayer(highlight)
+//                        selectionLayer.addSublayer(highlight)
                         return true // Keep going.
                     }
                 }
@@ -484,10 +488,10 @@ public struct SDSPushOutScrollableTextView: View {
 
 // MARK: CALayer
 class TextDocumentLayer: CALayer {
-//    override class func defaultAction(forKey event: String) -> CAAction? {
-//        // Suppress default animation of opacity when adding comment bubbles.
-//        return NSNull()
-//    }
+    override class func defaultAction(forKey event: String) -> CAAction? {
+        // Suppress default animation of opacity when adding comment bubbles.
+        return NSNull()
+    }
 }
 
 class TextLayoutFragmentLayer: CALayer {
