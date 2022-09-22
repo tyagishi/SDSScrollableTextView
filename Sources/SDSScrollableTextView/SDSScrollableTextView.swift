@@ -13,26 +13,35 @@ import os
 
 public typealias MyOwnTextContentManager = NSTextContentManager & NSTextStorageObserving
 
-public class TextEditorControl: ObservableObject {
-    @Published public var firstResponder: Bool = false
-    @Published public var focusRange: NSRange? = nil
-    @Published public var insertText: String? = nil
+public class TextEditorControl: NSObject, ObservableObject {
+    public var firstResponder: Bool = false
+    public var focusRange: NSRange? = nil
+    public var insertText: String? = nil
 //    var textContentManager: NSTextContentManager
 //    public init(_ contentManager: NSTextContentManager) {
 //        textContentManager = contentManager
 //    }
-    public init() {}
+//    public init() {}
 }
-public typealias keydownClosure = (NSTextView, NSEvent) -> Bool
+public typealias KeyDownClosure = (NSTextView, NSEvent) -> Bool
 
 public struct TextEditorDelegates {
     var textContentStorageDelegate: NSTextContentStorageDelegate? = nil
     var textStorageDelegate: NSTextStorageDelegate? = nil
     var textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil
     var textViewportLayoutControllerDelegate: NSTextViewportLayoutControllerDelegate? = nil
+    public init(textContentStorageDelegate: NSTextContentStorageDelegate? = nil,
+         textStorageDelegate: NSTextStorageDelegate? = nil,
+         textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil,
+         textViewportLayoutControllerDelegate: NSTextViewportLayoutControllerDelegate? = nil) {
+        self.textContentStorageDelegate = textContentStorageDelegate
+        self.textStorageDelegate = textStorageDelegate
+        self.textLayoutManagerDelegate = textLayoutManagerDelegate
+        self.textViewportLayoutControllerDelegate = textViewportLayoutControllerDelegate
+    }
 }
 public protocol TextEditorSource: NSTextContentStorageDelegate, NSTextStorageDelegate,
-                                  NSTextLayoutManagerDelegate, NSTextViewportLayoutControllerDelegate {
+                                  NSTextLayoutManagerDelegate { //}, NSTextViewportLayoutControllerDelegate {
     var text: String {get set}
 }
 
@@ -41,21 +50,39 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     static let logger = Logger(subsystem: "com.smalldesksoftware.SDSScrollableTextView", category: "SDSScrollableTextView")
     
     var textEditorSource: TextEditorSource
-    var control: TextEditorControl?
     let rect: CGRect
-    
+
+    let textContentStorageDelegate: NSTextContentStorageDelegate?
+    let textStorageDelegate: NSTextStorageDelegate?
+    let textLayoutManagerDelegate: NSTextLayoutManagerDelegate?
+    let textViewportLayoutControllerDelegate: NSTextViewportLayoutControllerDelegate?
+
+    let control: TextEditorControl?
+
     let textContentManager: MyOwnTextContentManager?
-    var textKit1Check: AnyCancellable? = nil
-    let keyDownClosure: keydownClosure?
+    let keyDownClosure: KeyDownClosure?
+
+    var textKit1Check: AnyCancellable?
 
     public init(_ textEditorSource: TextEditorSource,
-                control: TextEditorControl? = nil,
                 rect: CGRect,
+                textContentStorageDelegate: NSTextContentStorageDelegate? = nil,
+                textStorageDelegate: NSTextStorageDelegate? = nil,
+                textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil,
+                textViewportLayoutControllerDelegate: NSTextViewportLayoutControllerDelegate? = nil,
+                control: TextEditorControl? = nil,
                 textContentManager: MyOwnTextContentManager? = nil,
-                keydownClosure: keydownClosure? = nil ) {
+                keydownClosure: KeyDownClosure? = nil ) {
         self.textEditorSource = textEditorSource
-        self.control = control
         self.rect = rect
+
+        self.textContentStorageDelegate = textContentStorageDelegate
+        self.textStorageDelegate = textStorageDelegate
+        self.textLayoutManagerDelegate = textLayoutManagerDelegate
+        self.textViewportLayoutControllerDelegate = textViewportLayoutControllerDelegate
+
+        self.control = control
+
         self.textContentManager = textContentManager
         self.keyDownClosure = keydownClosure
 
@@ -78,7 +105,9 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         // setup TextlayoutManager
         let textLayoutManager = NSTextLayoutManager()
         textLayoutManager.delegate = textEditorSource
-        textLayoutManager.textViewportLayoutController.delegate = textEditorSource
+        if let textViewportLayoutControllerDelegate = textViewportLayoutControllerDelegate {
+            textLayoutManager.textViewportLayoutController.delegate = textViewportLayoutControllerDelegate
+        }
 
         // setup TextContainer
         let textContainer = NSTextContainer(size: CGSize( width: rect.size.width, height: CGFloat.greatestFiniteMagnitude))
@@ -93,7 +122,10 @@ public struct SDSScrollableTextView: NSViewRepresentable {
 
         // textview
         let textView = MyNSTextView(frame: rect, textContainer: textContainer, keyDown: keyDownClosure)//NSTextView(frame: rect, textContainer: textContainer)
-        textView.textStorage?.delegate = textEditorSource
+        //let textView = NSTextView(frame: rect, textContainer: textContainer)
+        if let textStorageDelegate = textStorageDelegate {
+            textView.textStorage?.delegate = textStorageDelegate
+        }
         textView.delegate = context.coordinator
         textView.isEditable = true
         textView.allowsUndo = true
@@ -105,8 +137,6 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         textView.maxSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
         textView.isVerticallyResizable = true
         textView.isHorizontallyResizable = false // does not need to expand/shrink without view size change
-
-//        textLayoutManager.textViewportLayoutController.delegate = textView
 
         textContentStorage.textStorage?.setAttributedString(NSAttributedString(string: textEditorSource.text))
 
@@ -160,9 +190,9 @@ public struct SDSScrollableTextView: NSViewRepresentable {
                     textStorage.setAttributedString(NSAttributedString(string: textEditorSource.text))
                     textStorage.endEditing()
                 } else {
-                    textStorage.beginEditing()
-                    textStorage.processEditing()
-                    textStorage.endEditing()
+//                    textStorage.beginEditing()
+//                    textStorage.processEditing()
+//                    textStorage.endEditing()
                 }
                 
                 if let insertText = self.control?.insertText,
@@ -215,9 +245,9 @@ open class MyNSTextView: NSTextView {
     private var contentLayer: CALayer! = nil
     private var selectionLayer: CALayer! = nil
 
-    let keyDownClosure: keydownClosure?
-    
-    init(frame: CGRect, textContainer: NSTextContainer, keyDown: keydownClosure? = nil ) {
+    let keyDownClosure: KeyDownClosure?
+
+    init(frame: CGRect, textContainer: NSTextContainer, keyDown: KeyDownClosure? = nil ) {
         self.keyDownClosure = keyDown
         super.init(frame: frame, textContainer: textContainer)
         self.wantsLayer = true
@@ -228,7 +258,7 @@ open class MyNSTextView: NSTextView {
         layer?.addSublayer(selectionLayer)
         //translatesAutoresizingMaskIntoConstraints = false
     }
-    
+
     open override var acceptsFirstResponder: Bool { return true }
 
     open override func prepareContent(in rect: NSRect) {
@@ -330,7 +360,7 @@ extension MyNSTextView: CALayerDelegate , NSTextViewportLayoutControllerDelegate
     var selectionColor: NSColor { return NSColor.red }//selectedTextBackgroundColor.withAlphaComponent(0.2) }
     var caretColor: NSColor { return .black }
 
-    
+
     private func updateSelectionHighlights() {
         if !textLayoutManager!.textSelections.isEmpty {
             print("selection is NOT empty")
@@ -371,7 +401,7 @@ extension MyNSTextView: CALayerDelegate , NSTextViewportLayoutControllerDelegate
             setFrameSize(contentSize)
         }
     }
-    
+
     private var scrollView: NSScrollView? {
         guard let result = enclosingScrollView else { return nil }
         if result.documentView == self {
@@ -393,7 +423,7 @@ extension MyNSTextView: CALayerDelegate , NSTextViewportLayoutControllerDelegate
             adjustViewportOffset()
         }
     }
-    
+
     private func adjustViewportOffset() {
         let viewportLayoutController = textLayoutManager!.textViewportLayoutController
         var layoutYPoint: CGFloat = 0
@@ -408,7 +438,7 @@ extension MyNSTextView: CALayerDelegate , NSTextViewportLayoutControllerDelegate
             scroll(CGPoint(x: scrollView!.contentView.bounds.minX, y: scrollView!.contentView.bounds.minY + adjustmentDelta))
         }
     }
-    
+
     open override func setFrameSize(_ newSize: NSSize) {
         //print(#function)
         super.setFrameSize(newSize)
@@ -459,29 +489,59 @@ extension MyNSTextView: CALayerDelegate , NSTextViewportLayoutControllerDelegate
 
 public struct SDSPushOutScrollableTextView: View {
     var textEditorSource: TextEditorSource
-    let control: TextEditorControl?
-    let textContentManager: MyOwnTextContentManager?
-    let keyDownClosure: keydownClosure?
 
+    let textContentStorageDelegate: NSTextContentStorageDelegate?
+    let textStorageDelegate: NSTextStorageDelegate?
+    let textLayoutManagerDelegate: NSTextLayoutManagerDelegate?
+    let textViewportLayoutControllerDelegate: NSTextViewportLayoutControllerDelegate?
+
+    let control: TextEditorControl?
+
+    let textContentManager: MyOwnTextContentManager?
+    let keyDownClosure: KeyDownClosure?
 
     public init(_ textEditorSource: TextEditorSource,
+                textContentStorageDelegate: NSTextContentStorageDelegate? = nil,
+                textStorageDelegate: NSTextStorageDelegate? = nil,
+                textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil,
+                textViewportLayoutControllerDelegate: NSTextViewportLayoutControllerDelegate? = nil,
                 control: TextEditorControl? = nil,
                 textContentManager: MyOwnTextContentManager? = nil,
-                keydownClosure: keydownClosure? = nil ) {
+                keydownClosure: KeyDownClosure? = nil ) {
         self.textEditorSource = textEditorSource
+
+        self.textContentStorageDelegate = textContentStorageDelegate
+        self.textStorageDelegate = textStorageDelegate
+        self.textLayoutManagerDelegate = textLayoutManagerDelegate
+        self.textViewportLayoutControllerDelegate = textViewportLayoutControllerDelegate
+
         self.control = control
+
         self.textContentManager = textContentManager
         self.keyDownClosure = keydownClosure
     }
 
+//    public init(_ textEditorSource: TextEditorSource,
+//                control: TextEditorControl? = nil,
+//                textContentManager: MyOwnTextContentManager? = nil,
+//                keydownClosure: KeyDownClosure? = nil ) {
+//        self.textEditorSource = textEditorSource
+//        self.control = control
+//        self.textContentManager = textContentManager
+//        self.keyDownClosure = keydownClosure
+//    }
+
     public var body: some View {
         GeometryReader { geom in
             SDSScrollableTextView(textEditorSource,
-                                  control: control,
                                   rect: geom.frame(in: .local),
+                                  textContentStorageDelegate: textContentStorageDelegate,
+                                  textStorageDelegate: textStorageDelegate,
+                                  textLayoutManagerDelegate: textLayoutManagerDelegate,
+                                  textViewportLayoutControllerDelegate: textViewportLayoutControllerDelegate,
+                                  control: control,
                                   textContentManager: textContentManager,
                                   keydownClosure: keyDownClosure)
-
         }
     }
 }
