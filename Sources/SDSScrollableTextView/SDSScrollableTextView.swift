@@ -172,6 +172,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         // NSTextView のサイズを自動で広げてくれる(TextContainer は広げてくれない)
         // .height は、新しい行が追加された時に TextView が広がるために必要
         textView.autoresizingMask = [.height]
+        //textView.textContainer?.heightTracksTextView = true
         
         textView.textContainer?.containerSize = CGSize(width: rect.size.width, height: CGFloat.greatestFiniteMagnitude)
         //textView.textContainer?.widthTracksTextView = true
@@ -200,7 +201,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     }
     
     public func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        logger.info("before updateNSView")
+        //logger.info("before updateNSView")
         //printSizes(scrollView)
         if let textView = scrollView.documentView as? NSTextView {
             // update textView size
