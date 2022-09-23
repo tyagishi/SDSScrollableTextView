@@ -218,17 +218,19 @@ public struct SDSScrollableTextView: NSViewRepresentable {
                     textStorage.beginEditing()
                     textStorage.setAttributedString(NSAttributedString(string: text))
                     textStorage.endEditing()
+                    textView.needsDisplay = true
+                    textView.needsLayout = true
                 }
                 
                 if let insertText = self.control?.insertText,
                    let selection = textView.selectedRanges.first as? NSRange {
                     textView.insertText(insertText, replacementRange: selection)
                     self.control?.insertText = nil
+                    textView.needsDisplay = true
+                    textView.needsLayout = true
                 }
 
             }
-            textView.needsDisplay = true
-            textView.needsLayout = true
             DispatchQueue.main.async {
                 if self.control?.firstResponder == true {
                     textView.window?.makeFirstResponder(textView)
