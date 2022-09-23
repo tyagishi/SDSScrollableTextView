@@ -9,7 +9,7 @@ import SwiftUI
 import SDSScrollableTextView
 import SwiftUIDebugUtil
 
-class TextContainer: NSObject, ObservableObject, TextEditorSource {
+class TextContainer: NSObject, ObservableObject {
     @Published var text: String = """
 Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello
 Hello1
@@ -57,12 +57,19 @@ struct ContentView: View {
     var body: some View {
         VStack {
             GeometryReader { geom in
-                SDSScrollableTextView(text, rect: geom.frame(in: .local),
+                SDSScrollableTextView($text.text,
+                                      rect: CGRect(x: 0, y: 0, width: 200, height: 200),
                                       textContentStorageDelegate: nil, textStorageDelegate: nil,
                                       textLayoutManagerDelegate: nil, textViewportLayoutControllerDelegate: nil,
-                                      control: nil, textContentManager: nil, keydownClosure: nil)
+                                      control: control, textContentManager: nil, keydownClosure: nil)
             }
-            SDSPushOutScrollableTextView(text, control: control)
+            SDSPushOutScrollableTextView($text.text, control: control)
+            TextEditor(text: $text.text)
+            Button(action: {
+                text.text += "a"
+            }, label: {
+                Text("Add")
+            })
         }
         .debugBorder(.red)
         .frame(maxHeight: 5000)
