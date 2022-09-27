@@ -225,7 +225,8 @@ public struct SDSScrollableTextView: NSViewRepresentable {
                 
                 if let insertText = self.control?.insertText,
                    let selection = textView.selectedRanges.first as? NSRange {
-                    textView.insertText(insertText, replacementRange: selection)
+                    textStorage.insert(NSAttributedString(string: insertText), at: selection.location)
+                    //textView.insertText(insertText, replacementRange: selection)
                     self.control?.insertText = nil
                     textView.needsDisplay = true
                     textView.needsLayout = true
