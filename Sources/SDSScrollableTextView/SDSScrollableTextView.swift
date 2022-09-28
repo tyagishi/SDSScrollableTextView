@@ -123,7 +123,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     }
     
     public func makeNSView(context: Context) -> NSScrollView {
-        //print("makeNSView")
+        logger.info("SDSScrollableTextView#makeNSView")
         // scrollview setup
         let scrollView = NSScrollView(frame: rect)
         scrollView.borderType = .lineBorder
@@ -179,7 +179,14 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         
         // assemble
         scrollView.documentView = textView
-        
+
+        DispatchQueue.main.async {
+            if let focusRange = self.control?.focusRange {
+                textView.scrollRangeToVisible(focusRange)
+                self.control?.focusRange = nil
+            }
+        }
+
         //print("end of init")
         //printSizes(scrollView)
         return scrollView
@@ -201,7 +208,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     }
     
     public func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        //logger.info("before updateNSView")
+        logger.info("SDSScrollableTextView#updateNSView")
         //printSizes(scrollView)
         if let textView = scrollView.documentView as? NSTextView {
             // update textView size
@@ -215,6 +222,8 @@ public struct SDSScrollableTextView: NSViewRepresentable {
             }
             // update view content
             if let textStorage = textView.textStorage {
+                print("current doc is \(textStorage.string.prefix(20))")
+
                 if textStorage.string != text {
                     textStorage.beginEditing()
                     textStorage.setAttributedString(NSAttributedString(string: text))
@@ -233,15 +242,14 @@ public struct SDSScrollableTextView: NSViewRepresentable {
                 }
 
             }
-            DispatchQueue.main.async {
-                if self.control?.firstResponder == true {
-                    textView.window?.makeFirstResponder(textView)
-                    self.control?.firstResponder = false
-                }
-                if let focusRange = self.control?.focusRange {
-                    textView.scrollRangeToVisible(focusRange)
-                    self.control?.focusRange = nil
-                }
+            if self.control?.firstResponder == true {
+                textView.window?.makeFirstResponder(textView)
+                self.control?.firstResponder = false
+            }
+            if let focusRange = self.control?.focusRange {
+                print("handle focus")
+                textView.scrollRangeToVisible(focusRange)
+                self.control?.focusRange = nil
             }
         }
         //print("after updateNSView")
