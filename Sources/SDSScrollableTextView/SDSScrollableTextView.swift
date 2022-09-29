@@ -123,7 +123,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     }
     
     public func makeNSView(context: Context) -> NSScrollView {
-        logger.info("SDSScrollableTextView#makeNSView")
+        //logger.info("SDSScrollableTextView#makeNSView")
         // scrollview setup
         let scrollView = NSScrollView(frame: rect)
         scrollView.borderType = .lineBorder
@@ -205,7 +205,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     }
     
     public func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        logger.info("SDSScrollableTextView#updateNSView")
+        //logger.info("SDSScrollableTextView#updateNSView")
         //printSizes(scrollView)
         if let textView = scrollView.documentView as? NSTextView {
             // update textView size
