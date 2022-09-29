@@ -123,7 +123,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     }
     
     public func makeNSView(context: Context) -> NSScrollView {
-        //logger.info("SDSScrollableTextView#makeNSView")
+        logger.info("SDSScrollableTextView#makeNSView")
         // scrollview setup
         let scrollView = NSScrollView(frame: rect)
         scrollView.borderType = .lineBorder
@@ -180,15 +180,12 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         // assemble
         scrollView.documentView = textView
 
-        DispatchQueue.main.async {
-            if let focusRange = self.control?.focusRange {
-                textView.scrollRangeToVisible(focusRange)
-                self.control?.focusRange = nil
-            }
+        if let focusRange = self.control?.focusRange {
+            print("scrollTo")
+            textView.scrollRangeToVisible(focusRange)
+            self.control?.focusRange = nil
         }
 
-        //print("end of init")
-        //printSizes(scrollView)
         return scrollView
     }
     
@@ -208,7 +205,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     }
     
     public func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        //logger.info("SDSScrollableTextView#updateNSView")
+        logger.info("SDSScrollableTextView#updateNSView")
         //printSizes(scrollView)
         if let textView = scrollView.documentView as? NSTextView {
             // update textView size
@@ -245,6 +242,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
                 self.control?.firstResponder = false
             }
             if let focusRange = self.control?.focusRange {
+                print("scroll to \(focusRange)")
                 textView.scrollRangeToVisible(focusRange)
                 self.control?.focusRange = nil
             }
