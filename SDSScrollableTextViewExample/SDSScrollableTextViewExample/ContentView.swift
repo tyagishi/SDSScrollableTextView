@@ -50,26 +50,50 @@ world
 """
 }
 
+extension EditorControlKey: FocusedValueKey {
+    typealias Value = TextEditorControl
+}
+
+
 struct ContentView: View {
     @StateObject var text = TextContainer()
     @State private var control = TextEditorControl()
 
     var body: some View {
         VStack {
-            GeometryReader { geom in
-                SDSScrollableTextView($text.text,
-                                      rect: CGRect(x: 0, y: 0, width: 200, height: 200),
-                                      textContentStorageDelegate: nil, textStorageDelegate: nil,
-                                      textLayoutManagerDelegate: nil, textViewportLayoutControllerDelegate: nil,
-                                      control: control, textContentManager: nil, keydownClosure: nil)
+            GroupBox("SDSScrollableTextView") {
+                GeometryReader { geom in
+                    SDSScrollableTextView($text.text,
+                                          rect: CGRect(x: 0, y: 0, width: 200, height: 200),
+                                          textContentStorageDelegate: nil, textStorageDelegate: nil,
+                                          textLayoutManagerDelegate: nil, textViewportLayoutControllerDelegate: nil,
+                                          control: control, textContentManager: nil, keydownClosure: nil)
+                }
+                //SDSPushOutScrollableTextView($text.text, control: control)
             }
-            SDSPushOutScrollableTextView($text.text, control: control)
-            TextEditor(text: $text.text)
-            Button(action: {
-                text.text += "a"
-            }, label: {
-                Text("Add")
-            })
+            GroupBox("Text content") {
+                TextEditor(text: $text.text)
+            }
+            HStack {
+                Button(action: {
+                    if let textView = control.textView,
+                       let selectedRange = textView.selectedRanges.first as? NSRange {
+                            textView.insertText("a", replacementRange: selectedRange)
+                        }
+                    }
+                }, label: {
+                    Text("Add a")
+                })
+                Button(action: {
+                    if let textView = control.textView,
+                       let selectedRange = textView.selectedRanges.first as? NSRange {
+                            let newRange = NSRange(location: selectedRange.location + 1, length: 0)
+                            print("found TextView")
+                            textView.setSelectedRange(newRange)
+                        }
+                    }
+                }, label: {Text("->")})
+            }
         }
         .debugBorder(.red)
         .frame(maxHeight: 5000)

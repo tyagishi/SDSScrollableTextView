@@ -14,14 +14,20 @@ import os
 public typealias MyOwnTextContentManager = NSTextContentManager & NSTextStorageObserving
 
 public class TextEditorControl: NSObject, ObservableObject {
+    public var textView: NSTextView? = nil
     public var firstResponder: Bool = false
-    public var focusRange: NSRange? = nil
-    public var insertText: String? = nil
+    @Published public var focusRange: NSRange? = nil
+    @Published public var selectionRange: NSRange? = nil
+    @Published public var insertText: String? = nil
+    @Published public var insertRange: NSRange? = nil
+    @Published public var cursors: NSRange? = nil
 //    var textContentManager: NSTextContentManager
 //    public init(_ contentManager: NSTextContentManager) {
 //        textContentManager = contentManager
 //    }
 //    public init() {}
+
+
 }
 public typealias KeyDownClosure = (NSTextView, NSEvent) -> Bool
 
@@ -180,28 +186,15 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         // assemble
         scrollView.documentView = textView
 
-        if let focusRange = self.control?.focusRange {
-            print("scrollTo")
-            textView.scrollRangeToVisible(focusRange)
-            self.control?.focusRange = nil
-        }
+        control?.textView = textView
 
         return scrollView
     }
-    
-    public func makeCoordinator() -> Coordinator {
-        
-        return Coordinator(self, self.textContentManager != nil ? self.textContentManager! : NSTextContentStorage())
-    }
-    
-    func printSizes(_ scrollView: NSScrollView) {
-        if let textView = scrollView.documentView as? NSTextView {
-            print("textView frame: \(textView.frame)")
-            if let container = textView.textLayoutManager?.textContainer {
-                print("container Size: \(container.size)")
-            }
-        }
 
+    public func makeCoordinator() -> Coordinator {
+        return Coordinator(self,
+                           control,
+                           self.textContentManager != nil ? self.textContentManager! : NSTextContentStorage())
     }
     
     public func updateNSView(_ scrollView: NSScrollView, context: Context) {
@@ -220,20 +213,22 @@ public struct SDSScrollableTextView: NSViewRepresentable {
             // update view content
             if let textStorage = textView.textStorage {
                 if textStorage.string != text {
-                    textStorage.beginEditing()
+                    //textView.string = text
+//                    textStorage.beginEditing()
                     textStorage.setAttributedString(NSAttributedString(string: text))
-                    textStorage.endEditing()
-                    textView.needsDisplay = true
-                    textView.needsLayout = true
+//                    textStorage.endEditing()
+//                    textView.needsDisplay = true
+//                    textView.needsLayout = true
                 }
                 
                 if let insertText = self.control?.insertText,
                    let selection = textView.selectedRanges.first as? NSRange {
-                    textStorage.insert(NSAttributedString(string: insertText), at: selection.location)
-                    //textView.insertText(insertText, replacementRange: selection)
+                    // need to use textView instead of textStorage, otherwise modification will be thrown away
+                    //textStorage.insert(NSAttributedString(string: insertText), at: selection.location)
+                    textView.insertText(insertText, replacementRange: selection)
                     self.control?.insertText = nil
-                    textView.needsDisplay = true
-                    textView.needsLayout = true
+//                    textView.needsDisplay = true
+//                    textView.needsLayout = true
                 }
 
             }
@@ -246,6 +241,10 @@ public struct SDSScrollableTextView: NSViewRepresentable {
                 textView.scrollRangeToVisible(focusRange)
                 self.control?.focusRange = nil
             }
+
+            if let selectionRange = self.control?.selectionRange {
+                textView.setSelectedRange(selectionRange)
+            }
         }
         //print("after updateNSView")
         //printSizes(scrollView)
@@ -253,12 +252,23 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     
     public class Coordinator: NSObject, NSTextViewDelegate {
         var parent: SDSScrollableTextView
+        var control: TextEditorControl?
         var textContentManager: MyOwnTextContentManager
 
-        init(_ parent: SDSScrollableTextView,_ textContentManager: MyOwnTextContentManager) {
+        init(_ parent: SDSScrollableTextView,_ control: TextEditorControl? = nil,_ textContentManager: MyOwnTextContentManager) {
             self.parent = parent
+            self.control = control
             self.textContentManager = textContentManager
         }
+
+//        public func textViewDidChangeSelection(_ notification: Notification) {
+//            guard let textView = notification.object as? NSTextView else { return }
+//            if let control = control,
+//               let range = textView.selectedRanges.first as? NSRange {
+//                control.selectionRange = range
+//                print("set range with \(control.selectionRange) to \(control)")
+//            }
+//        }
         
         public func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
@@ -268,6 +278,16 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         public func textView(_ view: NSTextView, menu: NSMenu, for event: NSEvent, at charIndex: Int) -> NSMenu? {
             // iff necessary, need to insert my own menus into passed menu
             return menu
+        }
+    }
+
+    // utility for debug
+    func printSizes(_ scrollView: NSScrollView) {
+        if let textView = scrollView.documentView as? NSTextView {
+            print("textView frame: \(textView.frame)")
+            if let container = textView.textLayoutManager?.textContainer {
+                print("container Size: \(container.size)")
+            }
         }
     }
 }
