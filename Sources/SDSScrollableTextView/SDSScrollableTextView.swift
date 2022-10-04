@@ -13,14 +13,28 @@ import os
 
 public typealias MyOwnTextContentManager = NSTextContentManager & NSTextStorageObserving
 
+//public struct TextEditorControlEnvironmentKey: EnvironmentKey {//}  FocusedValueKey {
+//    public typealias Value = TextEditorControl?
+//
+//    static public var defaultValue: TextEditorControl? = nil
+//}
+//
+////extension FocusedValues {
+//extension EnvironmentValues {
+//    public var currentEditorControl: TextEditorControlEnvironmentKey.Value {
+//        get { self[TextEditorControlEnvironmentKey.self] }
+//        set { self[TextEditorControlEnvironmentKey.self] = newValue }
+//    }
+//}
+
 public class TextEditorControl: NSObject, ObservableObject {
     public var textView: NSTextView? = nil
-    public var firstResponder: Bool = false
-    @Published public var focusRange: NSRange? = nil
-    @Published public var selectionRange: NSRange? = nil
-    @Published public var insertText: String? = nil
-    @Published public var insertRange: NSRange? = nil
-    @Published public var cursors: NSRange? = nil
+//    public var firstResponder: Bool = false
+    public var focusRange: NSRange? = nil
+//    @Published public var selectionRange: NSRange? = nil
+//    @Published public var insertText: String? = nil
+//    @Published public var insertRange: NSRange? = nil
+//    @Published public var cursors: NSRange? = nil
 //    var textContentManager: NSTextContentManager
 //    public init(_ contentManager: NSTextContentManager) {
 //        textContentManager = contentManager
@@ -121,9 +135,10 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         self.textContentManager = textContentManager
         self.keyDownClosure = keydownClosure
 
-        textKit1Check = NotificationCenter.default.publisher(for: NSTextView.didSwitchToNSLayoutManagerNotification)
+        textKit1Check = NotificationCenter.default.publisher(for: NSTextView.willSwitchToNSLayoutManagerNotification)
             .sink { value in
-                print("receive didSwitchToNSLayoutManagerNotification with \(value)")
+                print("receive willSwitchToNSLayoutManagerNotification with \(value)")
+                print("============ switched to TextKit1 ============")
             }
         //print("init")
     }
@@ -144,14 +159,14 @@ public struct SDSScrollableTextView: NSViewRepresentable {
             textLayoutManager.textViewportLayoutController.delegate = textViewportLayoutControllerDelegate
         }
 
-        // setup TextContainer
+        // setup TextContainer (at WWDC21 Video, height is specified with 0.0)
         let textContainer = NSTextContainer(size: CGSize( width: rect.size.width, height: CGFloat.greatestFiniteMagnitude))
         textContainer.widthTracksTextView = true // adjust width according to textView
         textContainer.heightTracksTextView = true
         textLayoutManager.textContainer = textContainer
 
-        let textContentStorage = context.coordinator.textContentManager
-        //let textContentStorage = NSTextContentStorage()
+        //let textContentStorage = context.coordinator.textContentManager
+        let textContentStorage = NSTextContentStorage()
         textContentStorage.addTextLayoutManager(textLayoutManager)
         textContentStorage.delegate = textContentStorageDelegate
 
@@ -192,15 +207,15 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     }
 
     public func makeCoordinator() -> Coordinator {
-        return Coordinator(self,
-                           control,
-                           self.textContentManager != nil ? self.textContentManager! : NSTextContentStorage())
+        return Coordinator(self)
     }
     
     public func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        //logger.info("SDSScrollableTextView#updateNSView")
+       // logger.info("SDSScrollableTextView#updateNSView")
         //printSizes(scrollView)
         if let textView = scrollView.documentView as? NSTextView {
+            control?.textView = textView
+
             // update textView size
             textView.minSize = rect.size
             textView.frame.size.width = rect.size.width
@@ -213,37 +228,25 @@ public struct SDSScrollableTextView: NSViewRepresentable {
             // update view content
             if let textStorage = textView.textStorage {
                 if textStorage.string != text {
-                    //textView.string = text
-//                    textStorage.beginEditing()
+                    textStorage.beginEditing()
                     textStorage.setAttributedString(NSAttributedString(string: text))
-//                    textStorage.endEditing()
-//                    textView.needsDisplay = true
-//                    textView.needsLayout = true
+                    textStorage.endEditing()
+                    textView.needsDisplay = true
+                    textView.needsLayout = true
+            //} else {
+//                    textStorage.invalidateAttributes(in: NSRange(location: 0, length: (textStorage.string as NSString).length))
+//                    textStorage.processEditing()
                 }
-                
-                if let insertText = self.control?.insertText,
-                   let selection = textView.selectedRanges.first as? NSRange {
-                    // need to use textView instead of textStorage, otherwise modification will be thrown away
-                    //textStorage.insert(NSAttributedString(string: insertText), at: selection.location)
-                    textView.insertText(insertText, replacementRange: selection)
-                    self.control?.insertText = nil
-//                    textView.needsDisplay = true
-//                    textView.needsLayout = true
-                }
+            }
 
-            }
-            if self.control?.firstResponder == true {
-                textView.window?.makeFirstResponder(textView)
-                self.control?.firstResponder = false
-            }
-            if let focusRange = self.control?.focusRange {
-                print("scroll to \(focusRange)")
+//            if self.control?.firstResponder == true {
+//                textView.window?.makeFirstResponder(textView)
+//                self.control?.firstResponder = false
+//            }
+            if let focusRange = control?.focusRange {
+                //                print("scroll to \(focusRange)")
                 textView.scrollRangeToVisible(focusRange)
-                self.control?.focusRange = nil
-            }
-
-            if let selectionRange = self.control?.selectionRange {
-                textView.setSelectedRange(selectionRange)
+//                self.control?.focusRange = nil
             }
         }
         //print("after updateNSView")
@@ -252,13 +255,9 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     
     public class Coordinator: NSObject, NSTextViewDelegate {
         var parent: SDSScrollableTextView
-        var control: TextEditorControl?
-        var textContentManager: MyOwnTextContentManager
 
-        init(_ parent: SDSScrollableTextView,_ control: TextEditorControl? = nil,_ textContentManager: MyOwnTextContentManager) {
+        init(_ parent: SDSScrollableTextView) {
             self.parent = parent
-            self.control = control
-            self.textContentManager = textContentManager
         }
 
 //        public func textViewDidChangeSelection(_ notification: Notification) {
