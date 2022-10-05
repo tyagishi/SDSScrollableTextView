@@ -140,7 +140,6 @@ public struct SDSScrollableTextView: NSViewRepresentable {
                 print("receive willSwitchToNSLayoutManagerNotification with \(value)")
                 print("============ switched to TextKit1 ============")
             }
-        //print("init")
     }
     
     public func makeNSView(context: Context) -> NSScrollView {
@@ -211,46 +210,44 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     }
     
     public func updateNSView(_ scrollView: NSScrollView, context: Context) {
-       // logger.info("SDSScrollableTextView#updateNSView")
+        logger.info("SDSScrollableTextView#updateNSView")
         //printSizes(scrollView)
-        if let textView = scrollView.documentView as? NSTextView {
-            control?.textView = textView
+        guard let textView = scrollView.documentView as? NSTextView else { return }
+        control?.textView = textView
 
-            // update textView size
-            textView.minSize = rect.size
-            textView.frame.size.width = rect.size.width
-            //textView.frame.size.height = rect.size.height
-            //textView.frame.size.height = 20000
-            if let container = textView.textLayoutManager?.textContainer {
-                container.size = rect.size
-                container.size.height = CGFloat.greatestFiniteMagnitude
-            }
-            // update view content
-            if let textStorage = textView.textStorage {
-                if textStorage.string != text {
-                    textStorage.beginEditing()
-                    textStorage.setAttributedString(NSAttributedString(string: text))
-                    textStorage.endEditing()
-                    textView.needsDisplay = true
-                    textView.needsLayout = true
-            //} else {
-//                    textStorage.invalidateAttributes(in: NSRange(location: 0, length: (textStorage.string as NSString).length))
-//                    textStorage.processEditing()
-                }
-            }
+        // update delegate
+        textView.textStorage?.delegate = textStorageDelegate
+        textView.textLayoutManager?.delegate = textLayoutManagerDelegate
+        textView.textContentStorage?.delegate = textContentStorageDelegate
 
-//            if self.control?.firstResponder == true {
-//                textView.window?.makeFirstResponder(textView)
-//                self.control?.firstResponder = false
-//            }
-            if let focusRange = control?.focusRange {
-                //                print("scroll to \(focusRange)")
-                textView.scrollRangeToVisible(focusRange)
-//                self.control?.focusRange = nil
-            }
+        // update textView size
+        textView.minSize = rect.size
+        textView.frame.size.width = rect.size.width
+        //textView.frame.size.height = rect.size.height
+        //textView.frame.size.height = 20000
+        if let container = textView.textLayoutManager?.textContainer {
+            container.size = rect.size
+            container.size.height = CGFloat.greatestFiniteMagnitude
         }
-        //print("after updateNSView")
-        //printSizes(scrollView)
+        // update view content
+        if let textStorage = textView.textStorage,
+           textStorage.string != text {
+            textStorage.beginEditing()
+            textStorage.setAttributedString(NSAttributedString(string: text))
+            textStorage.endEditing()
+            textView.needsDisplay = true
+            textView.needsLayout = true
+        }
+
+        //            if self.control?.firstResponder == true {
+        //                textView.window?.makeFirstResponder(textView)
+        //                self.control?.firstResponder = false
+        //            }
+        if let focusRange = control?.focusRange {
+            //                print("scroll to \(focusRange)")
+            textView.scrollRangeToVisible(focusRange)
+            //                self.control?.focusRange = nil
+        }
     }
     
     public class Coordinator: NSObject, NSTextViewDelegate {
