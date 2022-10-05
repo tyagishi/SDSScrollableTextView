@@ -40,7 +40,14 @@ public class TextEditorControl: NSObject, ObservableObject {
 //        textContentManager = contentManager
 //    }
 //    public init() {}
-
+    public func markTextStorageEdited(_ editedMark: NSTextStorageEditActions, nsRange: NSRange, changeInLength delta: Int) {
+        if let textContentManager = textView?.textContentStorage,
+           let textStorage = textContentManager.textStorage {
+            textContentManager.performEditingTransaction(for: textStorage) {
+                textStorage.edited(editedMark, range: nsRange, changeInLength: delta)
+            }
+        }
+    }
 
 }
 public typealias KeyDownClosure = (NSTextView, NSEvent) -> Bool
@@ -230,10 +237,11 @@ public struct SDSScrollableTextView: NSViewRepresentable {
             container.size.height = CGFloat.greatestFiniteMagnitude
         }
         // update view content
-        if let textStorage = textView.textStorage,
-           textStorage.string != text {
+        if let textStorage = textView.textStorage {
             textStorage.beginEditing()
-            textStorage.setAttributedString(NSAttributedString(string: text))
+            if textStorage.string != text {
+                textStorage.setAttributedString(NSAttributedString(string: text))
+            }
             textStorage.endEditing()
             textView.needsDisplay = true
             textView.needsLayout = true
