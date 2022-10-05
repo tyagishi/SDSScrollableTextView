@@ -30,7 +30,6 @@ public typealias MyOwnTextContentManager = NSTextContentManager & NSTextStorageO
 public class TextEditorControl: NSObject, ObservableObject {
     public var textView: NSTextView? = nil
 //    public var firstResponder: Bool = false
-    public var focusRange: NSRange? = nil
 //    @Published public var selectionRange: NSRange? = nil
 //    @Published public var insertText: String? = nil
 //    @Published public var insertRange: NSRange? = nil
@@ -47,6 +46,10 @@ public class TextEditorControl: NSObject, ObservableObject {
                 textStorage.edited(editedMark, range: nsRange, changeInLength: delta)
             }
         }
+    }
+
+    public func focusRange(_ nsRange: NSRange) {
+        textView?.scrollRangeToVisible(nsRange)
     }
 
 }
@@ -251,11 +254,6 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         //                textView.window?.makeFirstResponder(textView)
         //                self.control?.firstResponder = false
         //            }
-        if let focusRange = control?.focusRange {
-            //                print("scroll to \(focusRange)")
-            textView.scrollRangeToVisible(focusRange)
-            //                self.control?.focusRange = nil
-        }
     }
     
     public class Coordinator: NSObject, NSTextViewDelegate {
