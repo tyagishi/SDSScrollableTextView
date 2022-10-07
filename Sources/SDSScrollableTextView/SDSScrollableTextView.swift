@@ -39,6 +39,7 @@ public class TextEditorControl: NSObject {
 //        textContentManager = contentManager
 //    }
 //    public init() {}
+    @MainActor
     public func focusRange(_ nsRange: NSRange) {
         textView?.scrollRangeToVisible(nsRange)
     }
@@ -217,7 +218,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     }
     
     public func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        logger.info("SDSScrollableTextView#updateNSView")
+        //logger.info("SDSScrollableTextView#updateNSView <start>")
         //printSizes(scrollView)
         guard let textView = scrollView.documentView as? NSTextView else { return }
         control?.textView = textView
