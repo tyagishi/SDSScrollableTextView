@@ -50,9 +50,9 @@ world
 """
 }
 
-extension EditorControlKey: FocusedValueKey {
-    typealias Value = TextEditorControl
-}
+//extension EditorControlKey: FocusedValueKey {
+//    typealias Value = TextEditorControl
+//}
 
 
 struct ContentView: View {
@@ -64,22 +64,22 @@ struct ContentView: View {
             GroupBox("SDSScrollableTextView") {
                 GeometryReader { geom in
                     SDSScrollableTextView($text.text,
-                                          rect: CGRect(x: 0, y: 0, width: 200, height: 200),
+                                          rect: geom.frame(in: .local),//  size,  //CGRect(x: 0, y: 0, width: 200, height: 200),
                                           textContentStorageDelegate: nil, textStorageDelegate: nil,
                                           textLayoutManagerDelegate: nil, textViewportLayoutControllerDelegate: nil,
                                           control: control, textContentManager: nil, keydownClosure: nil)
                 }
                 //SDSPushOutScrollableTextView($text.text, control: control)
             }
-            GroupBox("Text content") {
+            .frame(width: 250)
+            GroupBox("Text content with TextEditor") {
                 TextEditor(text: $text.text)
             }
             HStack {
                 Button(action: {
                     if let textView = control.textView,
                        let selectedRange = textView.selectedRanges.first as? NSRange {
-                            textView.insertText("a", replacementRange: selectedRange)
-                        }
+                        textView.insertText("a", replacementRange: selectedRange)
                     }
                 }, label: {
                     Text("Add a")
@@ -87,10 +87,9 @@ struct ContentView: View {
                 Button(action: {
                     if let textView = control.textView,
                        let selectedRange = textView.selectedRanges.first as? NSRange {
-                            let newRange = NSRange(location: selectedRange.location + 1, length: 0)
-                            print("found TextView")
-                            textView.setSelectedRange(newRange)
-                        }
+                        let newRange = NSRange(location: selectedRange.location + 1, length: 0)
+                        print("found TextView")
+                        textView.setSelectedRange(newRange)
                     }
                 }, label: {Text("->")})
             }
