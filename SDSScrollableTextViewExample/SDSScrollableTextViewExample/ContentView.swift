@@ -10,7 +10,8 @@ import SDSScrollableTextView
 import SwiftUIDebugUtil
 
 class TextContainer: NSObject, ObservableObject {
-    @Published var text: String = """
+    @Published var text: String = ""
+    @Published var text2: String = """
 Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello Hello
 Hello1
 Hello2
@@ -67,13 +68,16 @@ struct ContentView: View {
                                           rect: geom.frame(in: .local),//  size,  //CGRect(x: 0, y: 0, width: 200, height: 200),
                                           textContentStorageDelegate: nil, textStorageDelegate: nil,
                                           textLayoutManagerDelegate: nil, textViewportLayoutControllerDelegate: nil,
-                                          control: control, textContentManager: nil, keydownClosure: nil)
+                                          control: control, textContentManager: nil, keydownClosure: nil,
+                                          accessibilityIdentifier: "SDSScrollableTextEditor")
                 }
                 //SDSPushOutScrollableTextView($text.text, control: control)
             }
             .frame(width: 250)
             GroupBox("Text content with TextEditor") {
                 TextEditor(text: $text.text)
+                    .accessibilityIdentifier("TextEditor")
+                    .accessibilityLabel("MyTextEditor")
             }
             HStack {
                 Button(action: {

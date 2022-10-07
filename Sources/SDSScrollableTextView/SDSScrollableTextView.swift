@@ -112,6 +112,8 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     let textContentManager: MyOwnTextContentManager? // not used yet
     let keyDownClosure: KeyDownClosure?
 
+    let accessibilityIdentifier: String?
+
     var textKit1Check: AnyCancellable?
 
     public init(_ text: Binding<String>,
@@ -122,7 +124,8 @@ public struct SDSScrollableTextView: NSViewRepresentable {
                 textViewportLayoutControllerDelegate: NSTextViewportLayoutControllerDelegate? = nil,
                 control: TextEditorControl? = nil,
                 textContentManager: MyOwnTextContentManager? = nil,
-                keydownClosure: KeyDownClosure? = nil ) {
+                keydownClosure: KeyDownClosure? = nil,
+                accessibilityIdentifier: String? = nil) {
         self._text = text
         self.rect = rect
 
@@ -135,6 +138,8 @@ public struct SDSScrollableTextView: NSViewRepresentable {
 
         self.textContentManager = textContentManager
         self.keyDownClosure = keydownClosure
+
+        self.accessibilityIdentifier = accessibilityIdentifier
 
         textKit1Check = NotificationCenter.default.publisher(for: NSTextView.willSwitchToNSLayoutManagerNotification)
             .sink { value in
@@ -181,6 +186,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         textView.allowsUndo = true
         textView.usesRuler = false
         textView.usesInspectorBar = false
+        textView.setAccessibilityIdentifier(accessibilityIdentifier)
         
         //textView.backgroundColor = .blue
         textView.minSize = CGSize(width: 0, height: rect.height)

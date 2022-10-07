@@ -8,4 +8,5 @@ final class SDSScrollableTextViewTests: XCTestCase {
         // results.
         XCTFail("not implemented")
     }
+
 }

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		364F3A9D28EFC5FF005F6D7A /* SDSScrollableTextViewExampleUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 364F3A9C28EFC5FF005F6D7A /* SDSScrollableTextViewExampleUITests.swift */; };
 		36991B8B27A3CEAF00C6192A /* SDSScrollableTextView in Frameworks */ = {isa = PBXBuildFile; productRef = 36991B8A27A3CEAF00C6192A /* SDSScrollableTextView */; };
 		36991B8E27A3CEFE00C6192A /* SwiftUIDebugUtil in Frameworks */ = {isa = PBXBuildFile; productRef = 36991B8D27A3CEFE00C6192A /* SwiftUIDebugUtil */; };
 		36F9C9C8279EB56400388354 /* SDSScrollableTextViewExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36F9C9C7279EB56400388354 /* SDSScrollableTextViewExampleApp.swift */; };
@@ -15,8 +16,20 @@
 		36F9C9CF279EB56500388354 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 36F9C9CE279EB56500388354 /* Preview Assets.xcassets */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		364F3AA028EFC5FF005F6D7A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 36F9C9BC279EB56400388354 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 36F9C9C3279EB56400388354;
+			remoteInfo = SDSScrollableTextViewExample;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		360BF7B327A3CE1D00F5F7D2 /* SDSScrollableTextView */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = SDSScrollableTextView; path = ..; sourceTree = "<group>"; };
+		364F3A9A28EFC5FF005F6D7A /* SDSScrollableTextViewExampleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SDSScrollableTextViewExampleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		364F3A9C28EFC5FF005F6D7A /* SDSScrollableTextViewExampleUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SDSScrollableTextViewExampleUITests.swift; sourceTree = "<group>"; };
 		36F9C9C4279EB56400388354 /* SDSScrollableTextViewExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SDSScrollableTextViewExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		36F9C9C7279EB56400388354 /* SDSScrollableTextViewExampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SDSScrollableTextViewExampleApp.swift; sourceTree = "<group>"; };
 		36F9C9C9279EB56400388354 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -26,6 +39,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		364F3A9728EFC5FF005F6D7A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		36F9C9C1279EB56400388354 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -46,6 +66,14 @@
 			name = Packages;
 			sourceTree = "<group>";
 		};
+		364F3A9B28EFC5FF005F6D7A /* SDSScrollableTextViewExampleUITests */ = {
+			isa = PBXGroup;
+			children = (
+				364F3A9C28EFC5FF005F6D7A /* SDSScrollableTextViewExampleUITests.swift */,
+			);
+			path = SDSScrollableTextViewExampleUITests;
+			sourceTree = "<group>";
+		};
 		36991B8927A3CEAF00C6192A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -58,6 +86,7 @@
 			children = (
 				360BF7B227A3CE1D00F5F7D2 /* Packages */,
 				36F9C9C6279EB56400388354 /* SDSScrollableTextViewExample */,
+				364F3A9B28EFC5FF005F6D7A /* SDSScrollableTextViewExampleUITests */,
 				36F9C9C5279EB56400388354 /* Products */,
 				36991B8927A3CEAF00C6192A /* Frameworks */,
 			);
@@ -67,6 +96,7 @@
 			isa = PBXGroup;
 			children = (
 				36F9C9C4279EB56400388354 /* SDSScrollableTextViewExample.app */,
+				364F3A9A28EFC5FF005F6D7A /* SDSScrollableTextViewExampleUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -94,6 +124,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		364F3A9928EFC5FF005F6D7A /* SDSScrollableTextViewExampleUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 364F3AA428EFC5FF005F6D7A /* Build configuration list for PBXNativeTarget "SDSScrollableTextViewExampleUITests" */;
+			buildPhases = (
+				364F3A9628EFC5FF005F6D7A /* Sources */,
+				364F3A9728EFC5FF005F6D7A /* Frameworks */,
+				364F3A9828EFC5FF005F6D7A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				364F3AA128EFC5FF005F6D7A /* PBXTargetDependency */,
+			);
+			name = SDSScrollableTextViewExampleUITests;
+			productName = SDSScrollableTextViewExampleUITests;
+			productReference = 364F3A9A28EFC5FF005F6D7A /* SDSScrollableTextViewExampleUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		36F9C9C3279EB56400388354 /* SDSScrollableTextViewExample */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 36F9C9D3279EB56500388354 /* Build configuration list for PBXNativeTarget "SDSScrollableTextViewExample" */;
@@ -122,9 +170,13 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1320;
+				LastSwiftUpdateCheck = 1410;
 				LastUpgradeCheck = 1320;
 				TargetAttributes = {
+					364F3A9928EFC5FF005F6D7A = {
+						CreatedOnToolsVersion = 14.1;
+						TestTargetID = 36F9C9C3279EB56400388354;
+					};
 					36F9C9C3279EB56400388354 = {
 						CreatedOnToolsVersion = 13.2.1;
 					};
@@ -147,11 +199,19 @@
 			projectRoot = "";
 			targets = (
 				36F9C9C3279EB56400388354 /* SDSScrollableTextViewExample */,
+				364F3A9928EFC5FF005F6D7A /* SDSScrollableTextViewExampleUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		364F3A9828EFC5FF005F6D7A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		36F9C9C2279EB56400388354 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -164,6 +224,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		364F3A9628EFC5FF005F6D7A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				364F3A9D28EFC5FF005F6D7A /* SDSScrollableTextViewExampleUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		36F9C9C0279EB56400388354 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -175,7 +243,51 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		364F3AA128EFC5FF005F6D7A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 36F9C9C3279EB56400388354 /* SDSScrollableTextViewExample */;
+			targetProxy = 364F3AA028EFC5FF005F6D7A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		364F3AA228EFC5FF005F6D7A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = QU378YD9WW;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.smalldesksoftware.SDSScrollableTextViewExampleUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = SDSScrollableTextViewExample;
+			};
+			name = Debug;
+		};
+		364F3AA328EFC5FF005F6D7A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = QU378YD9WW;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.smalldesksoftware.SDSScrollableTextViewExampleUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = SDSScrollableTextViewExample;
+			};
+			name = Release;
+		};
 		36F9C9D1279EB56500388354 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -348,6 +460,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		364F3AA428EFC5FF005F6D7A /* Build configuration list for PBXNativeTarget "SDSScrollableTextViewExampleUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				364F3AA228EFC5FF005F6D7A /* Debug */,
+				364F3AA328EFC5FF005F6D7A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		36F9C9BF279EB56400388354 /* Build configuration list for PBXProject "SDSScrollableTextViewExample" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
