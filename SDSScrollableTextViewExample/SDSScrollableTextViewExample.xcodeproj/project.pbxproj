@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		364D16C228F001B4006E6B0A /* SDSScrollableTextViewUITests_usingEditorControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 364D16C128F001B4006E6B0A /* SDSScrollableTextViewUITests_usingEditorControl.swift */; };
 		364F3A9D28EFC5FF005F6D7A /* SDSScrollableTextViewExampleUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 364F3A9C28EFC5FF005F6D7A /* SDSScrollableTextViewExampleUITests.swift */; };
 		36991B8B27A3CEAF00C6192A /* SDSScrollableTextView in Frameworks */ = {isa = PBXBuildFile; productRef = 36991B8A27A3CEAF00C6192A /* SDSScrollableTextView */; };
 		36991B8E27A3CEFE00C6192A /* SwiftUIDebugUtil in Frameworks */ = {isa = PBXBuildFile; productRef = 36991B8D27A3CEFE00C6192A /* SwiftUIDebugUtil */; };
@@ -28,6 +29,7 @@
 
 /* Begin PBXFileReference section */
 		360BF7B327A3CE1D00F5F7D2 /* SDSScrollableTextView */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = SDSScrollableTextView; path = ..; sourceTree = "<group>"; };
+		364D16C128F001B4006E6B0A /* SDSScrollableTextViewUITests_usingEditorControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SDSScrollableTextViewUITests_usingEditorControl.swift; sourceTree = "<group>"; };
 		364F3A9A28EFC5FF005F6D7A /* SDSScrollableTextViewExampleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SDSScrollableTextViewExampleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		364F3A9C28EFC5FF005F6D7A /* SDSScrollableTextViewExampleUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SDSScrollableTextViewExampleUITests.swift; sourceTree = "<group>"; };
 		36F9C9C4279EB56400388354 /* SDSScrollableTextViewExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SDSScrollableTextViewExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -70,6 +72,7 @@
 			isa = PBXGroup;
 			children = (
 				364F3A9C28EFC5FF005F6D7A /* SDSScrollableTextViewExampleUITests.swift */,
+				364D16C128F001B4006E6B0A /* SDSScrollableTextViewUITests_usingEditorControl.swift */,
 			);
 			path = SDSScrollableTextViewExampleUITests;
 			sourceTree = "<group>";
@@ -229,6 +232,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				364F3A9D28EFC5FF005F6D7A /* SDSScrollableTextViewExampleUITests.swift in Sources */,
+				364D16C228F001B4006E6B0A /* SDSScrollableTextViewUITests_usingEditorControl.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -81,6 +81,13 @@ struct ContentView: View {
             }
             HStack {
                 Button(action: {
+//                    if let textView = control.textView,
+//                       let textStorage = textView.textStorage {
+//                        textStorage.
+                }, label: {
+                    Text("InsertViaControl")
+                })
+                Button(action: {
                     if let textView = control.textView,
                        let selectedRange = textView.selectedRanges.first as? NSRange {
                         textView.insertText("a", replacementRange: selectedRange)
