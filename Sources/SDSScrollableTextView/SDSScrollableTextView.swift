@@ -13,22 +13,8 @@ import os
 
 public typealias MyOwnTextContentManager = NSTextContentManager & NSTextStorageObserving
 
-//public struct TextEditorControlEnvironmentKey: EnvironmentKey {//}  FocusedValueKey {
-//    public typealias Value = TextEditorControl?
-//
-//    static public var defaultValue: TextEditorControl? = nil
-//}
-//
-////extension FocusedValues {
-//extension EnvironmentValues {
-//    public var currentEditorControl: TextEditorControlEnvironmentKey.Value {
-//        get { self[TextEditorControlEnvironmentKey.self] }
-//        set { self[TextEditorControlEnvironmentKey.self] = newValue }
-//    }
-//}
-
-public class TextEditorControl: NSObject {
-    public var textView: NSTextView? = nil
+public class TextEditorControl: NSObject, ObservableObject {
+    @Published public private(set) var textView: NSTextView? = nil
 //    public var firstResponder: Bool = false
 //    @Published public var selectionRange: NSRange? = nil
 //    @Published public var insertText: String? = nil
@@ -44,11 +30,21 @@ public class TextEditorControl: NSObject {
         textView?.scrollRangeToVisible(nsRange)
     }
 
+    @MainActor
+    public func setTextView(_ textView: NSTextView) {
+        self.textView = textView
+    }
 }
+
+public protocol TextViewSource: ObservableObject {
+    func updateText(_ str: String)
+    var text: String { get }
+}
+
 public typealias KeyDownClosure = (NSTextView, NSEvent) -> Bool
 
-public struct SDSPushOutScrollableTextView: View {
-    @Binding var text: String
+public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
+    @ObservedObject var textDataSource: DataSource //MarkdownFile
 
     let textContentStorageDelegate: NSTextContentStorageDelegate?
     let textStorageDelegate: NSTextStorageDelegate?
@@ -60,7 +56,7 @@ public struct SDSPushOutScrollableTextView: View {
     let textContentManager: MyOwnTextContentManager?
     let keyDownClosure: KeyDownClosure?
 
-    public init(_ text: Binding<String>,
+    public init(_ textDataSource: DataSource,
                 textContentStorageDelegate: NSTextContentStorageDelegate? = nil,
                 textStorageDelegate: NSTextStorageDelegate? = nil,
                 textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil,
@@ -68,8 +64,7 @@ public struct SDSPushOutScrollableTextView: View {
                 control: TextEditorControl? = nil,
                 textContentManager: MyOwnTextContentManager? = nil,
                 keydownClosure: KeyDownClosure? = nil ) {
-        self._text = text
-
+        self.textDataSource = textDataSource
         self.textContentStorageDelegate = textContentStorageDelegate
         self.textStorageDelegate = textStorageDelegate
         self.textLayoutManagerDelegate = textLayoutManagerDelegate
@@ -83,7 +78,7 @@ public struct SDSPushOutScrollableTextView: View {
 
     public var body: some View {
         GeometryReader { geom in
-            SDSScrollableTextView($text,
+            SDSScrollableTextView(textDataSource,
                                   rect: geom.frame(in: .local),
                                   textContentStorageDelegate: textContentStorageDelegate,
                                   textStorageDelegate: textStorageDelegate,
@@ -96,11 +91,11 @@ public struct SDSPushOutScrollableTextView: View {
     }
 }
 
-public struct SDSScrollableTextView: NSViewRepresentable {
+public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresentable {
     public typealias NSViewType = NSScrollView
     let logger = Logger(subsystem: "com.smalldesksoftware.SDSScrollableTextView", category: "SDSScrollableTextView")
 
-    @Binding var text: String
+    @ObservedObject var textDataSource: DataSource //MarkdownFile
     let rect: CGRect
 
     let textContentStorageDelegate: NSTextContentStorageDelegate?
@@ -117,7 +112,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
 
     var textKit1Check: AnyCancellable?
 
-    public init(_ text: Binding<String>,
+    public init(_ textDataSource: DataSource,
                 rect: CGRect,
                 textContentStorageDelegate: NSTextContentStorageDelegate? = nil,
                 textStorageDelegate: NSTextStorageDelegate? = nil,
@@ -127,7 +122,7 @@ public struct SDSScrollableTextView: NSViewRepresentable {
                 textContentManager: MyOwnTextContentManager? = nil,
                 keydownClosure: KeyDownClosure? = nil,
                 accessibilityIdentifier: String? = nil) {
-        self._text = text
+        self.textDataSource = textDataSource
         self.rect = rect
 
         self.textContentStorageDelegate = textContentStorageDelegate
@@ -148,16 +143,18 @@ public struct SDSScrollableTextView: NSViewRepresentable {
                 print("receive willSwitchToNSLayoutManagerNotification with \(value)")
             }
     }
-    
+
     public func makeNSView(context: Context) -> NSScrollView {
-        //logger.info("SDSScrollableTextView#makeNSView")
+//        logger.info("----------------------------------------")
+//        logger.info("SDSScrollableTextView#makeNSView")
+//        logger.info("----------------------------------------")
         // scrollview setup
         let scrollView = NSScrollView(frame: rect)
         scrollView.borderType = .lineBorder
         scrollView.hasVerticalScroller = true
         scrollView.hasHorizontalScroller = false
         scrollView.autoresizingMask = [.width, .height]
-        
+
         // setup TextlayoutManager
         let textLayoutManager = NSTextLayoutManager()
         textLayoutManager.delegate = textLayoutManagerDelegate
@@ -188,27 +185,27 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         textView.usesRuler = false
         textView.usesInspectorBar = false
         textView.setAccessibilityIdentifier(accessibilityIdentifier)
-        
+
         //textView.backgroundColor = .blue
         textView.minSize = CGSize(width: 0, height: rect.height)
         textView.maxSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
         textView.isVerticallyResizable = true
         textView.isHorizontallyResizable = false // does not need to expand/shrink without view size change
 
-        textContentStorage.textStorage?.setAttributedString(NSAttributedString(string: text))
+        textContentStorage.textStorage?.setAttributedString(NSAttributedString(string: textDataSource.text))
 
         // NSTextView のサイズを自動で広げてくれる(TextContainer は広げてくれない)
         // .height は、新しい行が追加された時に TextView が広がるために必要
         textView.autoresizingMask = [.height]
         //textView.textContainer?.heightTracksTextView = true
-        
+
         textView.textContainer?.containerSize = CGSize(width: rect.size.width, height: CGFloat.greatestFiniteMagnitude)
         //textView.textContainer?.widthTracksTextView = true
-        
+
         // assemble
         scrollView.documentView = textView
 
-        control?.textView = textView
+        control?.setTextView(textView)
 
         return scrollView
     }
@@ -216,12 +213,17 @@ public struct SDSScrollableTextView: NSViewRepresentable {
     public func makeCoordinator() -> Coordinator {
         return Coordinator(self)
     }
-    
+
     public func updateNSView(_ scrollView: NSScrollView, context: Context) {
+//        logger.info("----------------------------------------")
+//        logger.info("SDSScrollableTextView#updateNSView")
+//        logger.info("----------------------------------------")
         //logger.info("SDSScrollableTextView#updateNSView <start>")
         //printSizes(scrollView)
         guard let textView = scrollView.documentView as? NSTextView else { return }
-        control?.textView = textView
+        if textView != control?.textView {
+            control?.setTextView(textView)
+        }
 
         // update delegate
         textView.textStorage?.delegate = textStorageDelegate
@@ -239,14 +241,14 @@ public struct SDSScrollableTextView: NSViewRepresentable {
         }
         // update view content
         if let textStorage = textView.textStorage {
-            if textStorage.string != text {
+            if textStorage.string != textDataSource.text {
                 textStorage.beginEditing()
-                textStorage.setAttributedString(NSAttributedString(string: text))
+                textStorage.setAttributedString(NSAttributedString(string: textDataSource.text))
                 textStorage.endEditing()
             }
         }
     }
-    
+
     public class Coordinator: NSObject, NSTextViewDelegate {
         var parent: SDSScrollableTextView
 
@@ -256,9 +258,9 @@ public struct SDSScrollableTextView: NSViewRepresentable {
 
         public func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
-            self.parent.text = textView.string
+            self.parent.textDataSource.updateText(textView.string)
         }
-        
+
         public func textView(_ view: NSTextView, menu: NSMenu, for event: NSEvent, at charIndex: Int) -> NSMenu? {
             // iff necessary, need to insert my own menus into passed menu
             //let myMenuItem = NSMenuItem(title: "MyMenu", action: nil, keyEquivalent: "")
@@ -292,11 +294,11 @@ open class MyNSTextView: NSTextView {
 
     open override var acceptsFirstResponder: Bool { return true }
 
-    open override func prepareContent(in rect: NSRect) {
-        layer!.setNeedsLayout()
-        super.prepareContent(in: rect)
-    }
-    open override class var isCompatibleWithResponsiveScrolling: Bool { return true }
+//    open override func prepareContent(in rect: NSRect) {
+//        layer!.setNeedsLayout()
+//        super.prepareContent(in: rect)
+//    }
+//    open override class var isCompatibleWithResponsiveScrolling: Bool { return true }
 
     required public init?(coder: NSCoder) {
         fatalError("not implemented")
