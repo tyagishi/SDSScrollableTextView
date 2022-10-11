@@ -36,12 +36,13 @@ public class TextEditorControl: NSObject, ObservableObject {
     }
 }
 
-public protocol TextViewSource: ObservableObject {
+public protocol TextViewSource: Identifiable, ObservableObject {
     func updateText(_ str: String)
     var text: String { get }
 }
 
 public typealias KeyDownClosure = (NSTextView, NSEvent) -> Bool
+public typealias Sync = (NSTextView, any TextViewSource) -> Void
 
 public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
     @ObservedObject var textDataSource: DataSource //MarkdownFile
@@ -55,6 +56,7 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
 
     let textContentManager: MyOwnTextContentManager?
     let keyDownClosure: KeyDownClosure?
+    let sync: Sync?
 
     public init(_ textDataSource: DataSource,
                 textContentStorageDelegate: NSTextContentStorageDelegate? = nil,
@@ -63,7 +65,8 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
                 textViewportLayoutControllerDelegate: NSTextViewportLayoutControllerDelegate? = nil,
                 control: TextEditorControl? = nil,
                 textContentManager: MyOwnTextContentManager? = nil,
-                keydownClosure: KeyDownClosure? = nil ) {
+                keydownClosure: KeyDownClosure? = nil,
+                sync: Sync? = nil ) {
         self.textDataSource = textDataSource
         self.textContentStorageDelegate = textContentStorageDelegate
         self.textStorageDelegate = textStorageDelegate
@@ -74,6 +77,7 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
 
         self.textContentManager = textContentManager
         self.keyDownClosure = keydownClosure
+        self.sync = sync
     }
 
     public var body: some View {
@@ -86,7 +90,8 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
                                   textViewportLayoutControllerDelegate: textViewportLayoutControllerDelegate,
                                   control: control,
                                   textContentManager: textContentManager,
-                                  keydownClosure: keyDownClosure)
+                                  keydownClosure: keyDownClosure,
+                                  sync: sync)
         }
     }
 }
@@ -107,6 +112,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
 
     let textContentManager: MyOwnTextContentManager? // not used yet
     let keyDownClosure: KeyDownClosure?
+    let sync: Sync?
 
     let accessibilityIdentifier: String?
 
@@ -121,6 +127,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
                 control: TextEditorControl? = nil,
                 textContentManager: MyOwnTextContentManager? = nil,
                 keydownClosure: KeyDownClosure? = nil,
+                sync: Sync? = nil,
                 accessibilityIdentifier: String? = nil) {
         self.textDataSource = textDataSource
         self.rect = rect
@@ -134,6 +141,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
 
         self.textContentManager = textContentManager
         self.keyDownClosure = keydownClosure
+        self.sync = sync
 
         self.accessibilityIdentifier = accessibilityIdentifier
 
@@ -207,6 +215,8 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
 
         control?.setTextView(textView)
 
+        self.sync?(textView, textDataSource)
+
         return scrollView
     }
 
@@ -224,6 +234,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
         if textView != control?.textView {
             control?.setTextView(textView)
         }
+
         // NOTE: might call updateNSView without calling makeNSView to switch content
         context.coordinator.parent = self
 
@@ -249,6 +260,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
                 textStorage.endEditing()
             }
         }
+        self.sync?(textView, textDataSource)
     }
 
     public class Coordinator: NSObject, NSTextViewDelegate {
