@@ -224,6 +224,8 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
         if textView != control?.textView {
             control?.setTextView(textView)
         }
+        // NOTE: might call updateNSView without calling makeNSView to switch content
+        context.coordinator.parent = self
 
         // update delegate
         textView.textStorage?.delegate = textStorageDelegate
