@@ -393,33 +393,27 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: UIViewRepresent
 //        logger.info("----------------------------------------")
         // scrollview setup
 
-        let textView = UITextView()
 
-//
-//        // setup TextlayoutManager
-//        let textLayoutManager = NSTextLayoutManager()
-//        textLayoutManager.delegate = textLayoutManagerDelegate
-//        if let textViewportLayoutControllerDelegate = textViewportLayoutControllerDelegate {
-//            textLayoutManager.textViewportLayoutController.delegate = textViewportLayoutControllerDelegate
-//        }
-//
-//        // setup TextContainer (at WWDC21 Video, height is specified with 0.0)
-//        let textContainer = NSTextContainer(size: CGSize( width: rect.size.width, height: CGFloat.greatestFiniteMagnitude))
-//        textContainer.widthTracksTextView = true // adjust width according to textView
-//        textContainer.heightTracksTextView = true
-//        textLayoutManager.textContainer = textContainer
-//
-//        //let textContentStorage = context.coordinator.textContentManager
-//        let textContentStorage = NSTextContentStorage()
-//        textContentStorage.addTextLayoutManager(textLayoutManager)
-//        textContentStorage.delegate = textContentStorageDelegate
-//
-//        // textview
-//        let textView = MyNSTextView(frame: rect, textContainer: textContainer, keyDown: keyDownClosure)//NSTextView(frame: rect, textContainer: textContainer)
-//        //let textView = NSTextView(frame: rect, textContainer: textContainer)
-//        if let textStorageDelegate = textStorageDelegate {
-//            textView.textStorage?.delegate = textStorageDelegate
-//        }
+        // setup TextlayoutManager
+        let textLayoutManager = NSTextLayoutManager()
+        textLayoutManager.delegate = textLayoutManagerDelegate
+        if let textViewportLayoutControllerDelegate = textViewportLayoutControllerDelegate {
+            textLayoutManager.textViewportLayoutController.delegate = textViewportLayoutControllerDelegate
+        }
+
+        // setup TextContainer (at WWDC21 Video, height is specified with 0.0)
+        let textContainer = NSTextContainer(size: CGSize( width: rect.size.width, height: CGFloat.greatestFiniteMagnitude))
+        textContainer.widthTracksTextView = true // adjust width according to textView
+        textContainer.heightTracksTextView = true
+        textLayoutManager.textContainer = textContainer
+
+        //let textContentStorage = context.coordinator.textContentManager
+        let textContentStorage = NSTextContentStorage()
+        textContentStorage.addTextLayoutManager(textLayoutManager)
+        textContentStorage.delegate = textContentStorageDelegate
+
+        let textView = UITextView(frame: rect, textContainer: textContainer)
+        textView.textStorage.delegate = textStorageDelegate
         textView.delegate = context.coordinator
 //        textView.isEditable = true
 //        textView.allowsUndo = true
@@ -463,19 +457,19 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: UIViewRepresent
 //        logger.info("----------------------------------------")
         //logger.info("SDSScrollableTextView#updateNSView <start>")
         //printSizes(scrollView)
-//        guard let textView = scrollView.documentView as? UITextView else { return }
-//        if textView != control?.textView {
-//            control?.setTextView(textView)
-//        }
-//
-//        // NOTE: might call updateNSView without calling makeNSView to switch content
-//        context.coordinator.parent = self
-//
-//        // update delegate
-//        textView.textStorage?.delegate = textStorageDelegate
-//        textView.textLayoutManager?.delegate = textLayoutManagerDelegate
-//        textView.textContentStorage?.delegate = textContentStorageDelegate
-//
+        if textView != control?.textView {
+            control?.setTextView(textView)
+        }
+
+        // NOTE: might call updateNSView without calling makeNSView to switch content
+        context.coordinator.parent = self
+
+        // update delegate
+        textView.textStorage.delegate = textStorageDelegate
+        textView.textLayoutManager?.delegate = textLayoutManagerDelegate
+        // TODO: no textContentStorage in UITextView??
+        // textView.textContentStorage.delegate = textContentStorageDelegate
+
 //        // update textView size
 //        textView.minSize = rect.size
 //        textView.frame.size.width = rect.size.width
@@ -485,14 +479,12 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: UIViewRepresent
 //            container.size = rect.size
 //            container.size.height = CGFloat.greatestFiniteMagnitude
 //        }
-//        // update view content
-//        if let textStorage = textView.textStorage {
-//            if textStorage.string != textDataSource.text {
-//                textStorage.beginEditing()
-//                textStorage.setAttributedString(NSAttributedString(string: textDataSource.text))
-//                textStorage.endEditing()
-//            }
-//        }
+        // update view content
+        if textView.textStorage.string != textDataSource.text {
+            textView.textStorage.beginEditing()
+            textView.textStorage.setAttributedString(NSAttributedString(string: textDataSource.text))
+            textView.textStorage.endEditing()
+        }
         self.sync?(textView, textDataSource)
     }
 
