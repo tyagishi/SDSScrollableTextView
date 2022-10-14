@@ -51,20 +51,26 @@ world
 """
 }
 
+extension TextContainer: TextViewSource {
+    func updateText(_ str: String) {
+        self.text = str
+    }
+}
+
 //extension EditorControlKey: FocusedValueKey {
 //    typealias Value = TextEditorControl
 //}
 
 
 struct ContentView: View {
-    @StateObject var text = TextContainer()
+    @StateObject var textContainer = TextContainer()
     @State private var control = TextEditorControl()
 
     var body: some View {
         VStack {
             GroupBox("SDSScrollableTextView") {
                 GeometryReader { geom in
-                    SDSScrollableTextView($text.text,
+                    SDSScrollableTextView(textContainer,
                                           rect: geom.frame(in: .local),//  size,  //CGRect(x: 0, y: 0, width: 200, height: 200),
                                           textContentStorageDelegate: nil, textStorageDelegate: nil,
                                           textLayoutManagerDelegate: nil, textViewportLayoutControllerDelegate: nil,
@@ -75,7 +81,7 @@ struct ContentView: View {
             }
             .frame(width: 250)
             GroupBox("Text content with TextEditor") {
-                TextEditor(text: $text.text)
+                TextEditor(text: $textContainer.text)
                     .accessibilityIdentifier("TextEditor")
                     .accessibilityLabel("MyTextEditor")
             }
