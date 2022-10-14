@@ -86,13 +86,7 @@ struct ContentView: View {
                     .accessibilityLabel("MyTextEditor")
             }
             HStack {
-                Button(action: {
-//                    if let textView = control.textView,
-//                       let textStorage = textView.textStorage {
-//                        textStorage.
-                }, label: {
-                    Text("InsertViaControl")
-                })
+                #if os(macOS)
                 Button(action: {
                     if let textView = control.textView,
                        let selectedRange = textView.selectedRanges.first as? NSRange {
@@ -109,6 +103,7 @@ struct ContentView: View {
                         textView.setSelectedRange(newRange)
                     }
                 }, label: {Text("->")})
+                #endif
             }
         }
         .debugBorder(.red)

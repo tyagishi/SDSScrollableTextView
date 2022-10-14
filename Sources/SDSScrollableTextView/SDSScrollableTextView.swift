@@ -7,31 +7,31 @@
 
 import Foundation
 import SwiftUI
-import AppKit
 import Combine
 import os
+
+#if os(macOS)
+import AppKit
+public typealias NSUITextView = NSTextView
+public typealias NSUIEvent = NSEvent
+#elseif os(iOS)
+import UIKit
+public typealias NSUITextView = UITextView
+public typealias NSUIEvent = UIEvent
+#else
+#error("unsupported platform")
+#endif
+
+
 
 public typealias MyOwnTextContentManager = NSTextContentManager & NSTextStorageObserving
 
 public class TextEditorControl: NSObject, ObservableObject {
-    @Published public private(set) var textView: NSTextView? = nil
-//    public var firstResponder: Bool = false
-//    @Published public var selectionRange: NSRange? = nil
-//    @Published public var insertText: String? = nil
-//    @Published public var insertRange: NSRange? = nil
-//    @Published public var cursors: NSRange? = nil
-//    var textContentManager: NSTextContentManager
-//    public init(_ contentManager: NSTextContentManager) {
-//        textContentManager = contentManager
-//    }
-//    public init() {}
-    @MainActor
+    @Published public private(set) var textView: NSUITextView? = nil
     public func focusRange(_ nsRange: NSRange) {
         textView?.scrollRangeToVisible(nsRange)
     }
-
-    @MainActor
-    public func setTextView(_ textView: NSTextView) {
+    public func setTextView(_ textView: NSUITextView) {
         self.textView = textView
     }
 }
@@ -41,8 +41,9 @@ public protocol TextViewSource: Identifiable, ObservableObject {
     var text: String { get }
 }
 
-public typealias KeyDownClosure = (NSTextView, NSEvent) -> Bool
-public typealias Sync = (NSTextView, any TextViewSource) -> Void
+public typealias KeyDownClosure = (NSUITextView, NSUIEvent) -> Bool
+
+public typealias Sync = (NSUITextView, any TextViewSource) -> Void
 
 public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
     @ObservedObject var textDataSource: DataSource //MarkdownFile
@@ -95,12 +96,12 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
         }
     }
 }
-
+#if os(macOS)
 public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresentable {
     public typealias NSViewType = NSScrollView
     let logger = Logger(subsystem: "com.smalldesksoftware.SDSScrollableTextView", category: "SDSScrollableTextView")
 
-    @ObservedObject var textDataSource: DataSource //MarkdownFile
+    @ObservedObject var textDataSource: DataSource
     let rect: CGRect
 
     let textContentStorageDelegate: NSTextContentStorageDelegate?
@@ -328,3 +329,184 @@ open class MyNSTextView: NSTextView {
         super.keyDown(with: event)
     }
 }
+#elseif os(iOS)
+public struct SDSScrollableTextView<DataSource: TextViewSource>: UIViewRepresentable {
+    public typealias UIViewType = UITextView
+    let logger = Logger(subsystem: "com.smalldesksoftware.SDSScrollableTextView", category: "SDSScrollableTextView")
+
+    @ObservedObject var textDataSource: DataSource
+    let rect: CGRect
+
+    let textContentStorageDelegate: NSTextContentStorageDelegate?
+    let textStorageDelegate: NSTextStorageDelegate?
+    let textLayoutManagerDelegate: NSTextLayoutManagerDelegate?
+    let textViewportLayoutControllerDelegate: NSTextViewportLayoutControllerDelegate?
+
+    let control: TextEditorControl?
+
+    let textContentManager: MyOwnTextContentManager? // not used yet
+    let keyDownClosure: KeyDownClosure?
+    let sync: Sync?
+
+    let accessibilityIdentifier: String?
+
+    var textKit1Check: AnyCancellable?
+
+    public init(_ textDataSource: DataSource,
+                rect: CGRect,
+                textContentStorageDelegate: NSTextContentStorageDelegate? = nil,
+                textStorageDelegate: NSTextStorageDelegate? = nil,
+                textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil,
+                textViewportLayoutControllerDelegate: NSTextViewportLayoutControllerDelegate? = nil,
+                control: TextEditorControl? = nil,
+                textContentManager: MyOwnTextContentManager? = nil,
+                keydownClosure: KeyDownClosure? = nil,
+                sync: Sync? = nil,
+                accessibilityIdentifier: String? = nil) {
+        self.textDataSource = textDataSource
+        self.rect = rect
+
+        self.textContentStorageDelegate = textContentStorageDelegate
+        self.textStorageDelegate = textStorageDelegate
+        self.textLayoutManagerDelegate = textLayoutManagerDelegate
+        self.textViewportLayoutControllerDelegate = textViewportLayoutControllerDelegate
+
+        self.control = control
+
+        self.textContentManager = textContentManager
+        self.keyDownClosure = keydownClosure
+        self.sync = sync
+
+        self.accessibilityIdentifier = accessibilityIdentifier
+
+        // TODO: detect in UIKit?
+//        textKit1Check = NotificationCenter.default.publisher(for: NSTextView.willSwitchToNSLayoutManagerNotification)
+//            .sink { value in
+//                print("==================== Switched to TextKit1 ====================")
+//                print("receive willSwitchToNSLayoutManagerNotification with \(value)")
+//            }
+    }
+
+    public func makeUIView(context: Context) -> UITextView {
+//        logger.info("----------------------------------------")
+//        logger.info("SDSScrollableTextView#makeNSView")
+//        logger.info("----------------------------------------")
+        // scrollview setup
+
+        let textView = UITextView()
+
+//
+//        // setup TextlayoutManager
+//        let textLayoutManager = NSTextLayoutManager()
+//        textLayoutManager.delegate = textLayoutManagerDelegate
+//        if let textViewportLayoutControllerDelegate = textViewportLayoutControllerDelegate {
+//            textLayoutManager.textViewportLayoutController.delegate = textViewportLayoutControllerDelegate
+//        }
+//
+//        // setup TextContainer (at WWDC21 Video, height is specified with 0.0)
+//        let textContainer = NSTextContainer(size: CGSize( width: rect.size.width, height: CGFloat.greatestFiniteMagnitude))
+//        textContainer.widthTracksTextView = true // adjust width according to textView
+//        textContainer.heightTracksTextView = true
+//        textLayoutManager.textContainer = textContainer
+//
+//        //let textContentStorage = context.coordinator.textContentManager
+//        let textContentStorage = NSTextContentStorage()
+//        textContentStorage.addTextLayoutManager(textLayoutManager)
+//        textContentStorage.delegate = textContentStorageDelegate
+//
+//        // textview
+//        let textView = MyNSTextView(frame: rect, textContainer: textContainer, keyDown: keyDownClosure)//NSTextView(frame: rect, textContainer: textContainer)
+//        //let textView = NSTextView(frame: rect, textContainer: textContainer)
+//        if let textStorageDelegate = textStorageDelegate {
+//            textView.textStorage?.delegate = textStorageDelegate
+//        }
+        textView.delegate = context.coordinator
+//        textView.isEditable = true
+//        textView.allowsUndo = true
+//        textView.usesRuler = false
+//        textView.usesInspectorBar = false
+//        textView.setAccessibilityIdentifier(accessibilityIdentifier)
+//
+//        //textView.backgroundColor = .blue
+//        textView.minSize = CGSize(width: 0, height: rect.height)
+//        textView.maxSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+//        textView.isVerticallyResizable = true
+//        textView.isHorizontallyResizable = false // does not need to expand/shrink without view size change
+//
+//        textContentStorage.textStorage?.setAttributedString(NSAttributedString(string: textDataSource.text))
+//
+//        // NSTextView のサイズを自動で広げてくれる(TextContainer は広げてくれない)
+//        // .height は、新しい行が追加された時に TextView が広がるために必要
+//        textView.autoresizingMask = [.height]
+//        //textView.textContainer?.heightTracksTextView = true
+//
+//        textView.textContainer?.containerSize = CGSize(width: rect.size.width, height: CGFloat.greatestFiniteMagnitude)
+//        //textView.textContainer?.widthTracksTextView = true
+//
+//        // assemble
+//        scrollView.documentView = textView
+
+        control?.setTextView(textView)
+
+        self.sync?(textView, textDataSource)
+
+        return textView
+    }
+
+    public func makeCoordinator() -> Coordinator {
+        return Coordinator(self)
+    }
+
+    public func updateUIView(_ textView: UITextView, context: Context) {
+//        logger.info("----------------------------------------")
+//        logger.info("SDSScrollableTextView#updateNSView")
+//        logger.info("----------------------------------------")
+        //logger.info("SDSScrollableTextView#updateNSView <start>")
+        //printSizes(scrollView)
+//        guard let textView = scrollView.documentView as? UITextView else { return }
+//        if textView != control?.textView {
+//            control?.setTextView(textView)
+//        }
+//
+//        // NOTE: might call updateNSView without calling makeNSView to switch content
+//        context.coordinator.parent = self
+//
+//        // update delegate
+//        textView.textStorage?.delegate = textStorageDelegate
+//        textView.textLayoutManager?.delegate = textLayoutManagerDelegate
+//        textView.textContentStorage?.delegate = textContentStorageDelegate
+//
+//        // update textView size
+//        textView.minSize = rect.size
+//        textView.frame.size.width = rect.size.width
+//        //textView.frame.size.height = rect.size.height
+//        //textView.frame.size.height = 20000
+//        if let container = textView.textLayoutManager?.textContainer {
+//            container.size = rect.size
+//            container.size.height = CGFloat.greatestFiniteMagnitude
+//        }
+//        // update view content
+//        if let textStorage = textView.textStorage {
+//            if textStorage.string != textDataSource.text {
+//                textStorage.beginEditing()
+//                textStorage.setAttributedString(NSAttributedString(string: textDataSource.text))
+//                textStorage.endEditing()
+//            }
+//        }
+        self.sync?(textView, textDataSource)
+    }
+
+    public class Coordinator: NSObject, UITextViewDelegate {
+        var parent: SDSScrollableTextView
+
+        init(_ parent: SDSScrollableTextView) {
+            self.parent = parent
+        }
+
+        public func textViewDidChange(_ textView: UITextView) {
+            self.parent.textDataSource.updateText(textView.text)
+        }
+    }
+}
+#endif
+
