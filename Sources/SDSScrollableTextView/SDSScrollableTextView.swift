@@ -42,8 +42,9 @@ public protocol TextViewSource: Identifiable, ObservableObject {
 }
 
 public typealias KeyDownClosure = (NSUITextView, NSUIEvent) -> Bool
-
 public typealias Sync = (NSUITextView, any TextViewSource) -> Void
+
+public typealias MenuClosure = (NSTextView, NSMenu, NSEvent,Int) -> NSMenu?
 
 public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
     @ObservedObject var textDataSource: DataSource //MarkdownFile
@@ -58,6 +59,7 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
     let textContentManager: MyOwnTextContentManager?
     let keyDownClosure: KeyDownClosure?
     let sync: Sync?
+    let menuClosure: MenuClosure?
 
     public init(_ textDataSource: DataSource,
                 textContentStorageDelegate: NSTextContentStorageDelegate? = nil,
@@ -67,7 +69,8 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
                 control: TextEditorControl? = nil,
                 textContentManager: MyOwnTextContentManager? = nil,
                 keydownClosure: KeyDownClosure? = nil,
-                sync: Sync? = nil ) {
+                sync: Sync? = nil,
+                menuClosure: MenuClosure? = nil) {
         self.textDataSource = textDataSource
         self.textContentStorageDelegate = textContentStorageDelegate
         self.textStorageDelegate = textStorageDelegate
@@ -79,6 +82,7 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
         self.textContentManager = textContentManager
         self.keyDownClosure = keydownClosure
         self.sync = sync
+        self.menuClosure = menuClosure
     }
 
     public var body: some View {
@@ -92,7 +96,8 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
                                   control: control,
                                   textContentManager: textContentManager,
                                   keydownClosure: keyDownClosure,
-                                  sync: sync)
+                                  sync: sync,
+                                  menuClosure: menuClosure)
         }
     }
 }
@@ -114,6 +119,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
     let textContentManager: MyOwnTextContentManager? // not used yet
     let keyDownClosure: KeyDownClosure?
     let sync: Sync?
+    let menuClosure: MenuClosure?
 
     let accessibilityIdentifier: String?
 
@@ -129,6 +135,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
                 textContentManager: MyOwnTextContentManager? = nil,
                 keydownClosure: KeyDownClosure? = nil,
                 sync: Sync? = nil,
+                menuClosure: MenuClosure? = nil,
                 accessibilityIdentifier: String? = nil) {
         self.textDataSource = textDataSource
         self.rect = rect
@@ -143,6 +150,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
         self.textContentManager = textContentManager
         self.keyDownClosure = keydownClosure
         self.sync = sync
+        self.menuClosure = menuClosure
 
         self.accessibilityIdentifier = accessibilityIdentifier
 
@@ -280,6 +288,9 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
             // iff necessary, need to insert my own menus into passed menu
             //let myMenuItem = NSMenuItem(title: "MyMenu", action: nil, keyEquivalent: "")
             //menu.addItem(myMenuItem)
+            if let menuClose = parent.menuClosure {
+                return menuClose(view, menu, event, charIndex)
+            }
             return menu
         }
     }
