@@ -435,30 +435,6 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: UIViewRepresent
         let textView = UITextView(frame: rect, textContainer: textContainer)
         textView.textStorage.delegate = textStorageDelegate
         textView.delegate = context.coordinator
-//        textView.isEditable = true
-//        textView.allowsUndo = true
-//        textView.usesRuler = false
-//        textView.usesInspectorBar = false
-//        textView.setAccessibilityIdentifier(accessibilityIdentifier)
-//
-//        //textView.backgroundColor = .blue
-//        textView.minSize = CGSize(width: 0, height: rect.height)
-//        textView.maxSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
-//        textView.isVerticallyResizable = true
-//        textView.isHorizontallyResizable = false // does not need to expand/shrink without view size change
-//
-//        textContentStorage.textStorage?.setAttributedString(NSAttributedString(string: textDataSource.text))
-//
-//        // NSTextView のサイズを自動で広げてくれる(TextContainer は広げてくれない)
-//        // .height は、新しい行が追加された時に TextView が広がるために必要
-//        textView.autoresizingMask = [.height]
-//        //textView.textContainer?.heightTracksTextView = true
-//
-//        textView.textContainer?.containerSize = CGSize(width: rect.size.width, height: CGFloat.greatestFiniteMagnitude)
-//        //textView.textContainer?.widthTracksTextView = true
-//
-//        // assemble
-//        scrollView.documentView = textView
 
         control?.setTextView(textView)
 
