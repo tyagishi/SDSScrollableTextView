@@ -34,7 +34,6 @@ public class TextEditorControl: NSObject, ObservableObject {
 #if os(macOS)
         DispatchQueue.main.asyncAfter(deadline: .now()+0.1) {
             self.textView?.window?.makeFirstResponder(self.textView)
-            self.textView?.needsDisplay = true
         }
 #endif
     }
