@@ -193,7 +193,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
         textLayoutManager.textContainer = textContainer
 
         //let textContentStorage = context.coordinator.textContentManager
-        let textContentStorage = NSTextContentStorage()
+        let textContentStorage = textContentManager ?? NSTextContentStorage()
         textContentStorage.addTextLayoutManager(textLayoutManager)
         textContentStorage.delegate = textContentStorageDelegate
 
