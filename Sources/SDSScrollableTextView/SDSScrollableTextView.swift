@@ -10,18 +10,17 @@ import SwiftUI
 import Combine
 import os
 
+import SDSNSUIBridge
+
 #if os(macOS)
 import AppKit
 public typealias NSUITextView = NSTextView
-public typealias NSUIEvent = NSEvent
 #elseif os(iOS)
 import UIKit
 public typealias NSUITextView = UITextView
-public typealias NSUIEvent = UIEvent
 #else
 #error("unsupported platform")
 #endif
-
 
 
 public typealias MyOwnTextContentManager = NSTextContentManager & NSTextStorageObserving
@@ -31,6 +30,15 @@ public class TextEditorControl: NSObject, ObservableObject {
     public func focusRange(_ nsRange: NSRange) {
         textView?.scrollRangeToVisible(nsRange)
     }
+    public func retrieveFocus() {
+#if os(macOS)
+        DispatchQueue.main.asyncAfter(deadline: .now()+0.1) {
+            self.textView?.window?.makeFirstResponder(self.textView)
+            self.textView?.needsDisplay = true
+        }
+#endif
+    }
+
     public func setTextView(_ textView: NSUITextView) {
         self.textView = textView
     }
@@ -44,7 +52,7 @@ public protocol TextViewSource: Identifiable, ObservableObject {
 public typealias KeyDownClosure = (NSUITextView, NSUIEvent) -> Bool
 public typealias Sync = (NSUITextView, any TextViewSource) -> Void
 
-public typealias MenuClosure = (NSTextView, NSMenu, NSEvent,Int) -> NSMenu?
+public typealias MenuClosure = (NSUITextView, NSUIMenu, NSUIEvent,Int) -> NSUIMenu?
 
 public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
     @ObservedObject var textDataSource: DataSource //MarkdownFile
@@ -341,6 +349,7 @@ open class MyNSTextView: NSTextView {
     }
 }
 #elseif os(iOS)
+// NOTE: contex menu is not implemented for iOS version
 public struct SDSScrollableTextView<DataSource: TextViewSource>: UIViewRepresentable {
     public typealias UIViewType = UITextView
     let logger = Logger(subsystem: "com.smalldesksoftware.SDSScrollableTextView", category: "SDSScrollableTextView")
@@ -373,6 +382,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: UIViewRepresent
                 textContentManager: MyOwnTextContentManager? = nil,
                 keydownClosure: KeyDownClosure? = nil,
                 sync: Sync? = nil,
+                menuClosure: MenuClosure? = nil,
                 accessibilityIdentifier: String? = nil) {
         self.textDataSource = textDataSource
         self.rect = rect
