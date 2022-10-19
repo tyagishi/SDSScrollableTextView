@@ -169,9 +169,9 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
     }
 
     public func makeNSView(context: Context) -> NSScrollView {
-//        logger.info("----------------------------------------")
-//        logger.info("SDSScrollableTextView#makeNSView")
-//        logger.info("----------------------------------------")
+        logger.info("----------------------------------------")
+        logger.info("SDSScrollableTextView#makeNSView")
+        logger.info("----------------------------------------")
         // scrollview setup
         let scrollView = NSScrollView(frame: rect)
         scrollView.borderType = .lineBorder
@@ -241,9 +241,9 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
     }
 
     public func updateNSView(_ scrollView: NSScrollView, context: Context) {
-//        logger.info("----------------------------------------")
-//        logger.info("SDSScrollableTextView#updateNSView")
-//        logger.info("----------------------------------------")
+        logger.info("----------------------------------------")
+        logger.info("SDSScrollableTextView#updateNSView")
+        logger.info("----------------------------------------")
         //logger.info("SDSScrollableTextView#updateNSView <start>")
         //printSizes(scrollView)
         guard let textView = scrollView.documentView as? NSTextView else { return }
@@ -299,6 +299,12 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
                 return menuClose(view, menu, event, charIndex)
             }
             return menu
+        }
+
+        // MARK: for debug
+        public func textView(_ textView: NSTextView, willChangeSelectionFromCharacterRange oldSelectedCharRange: NSRange, toCharacterRange newSelectedCharRange: NSRange) -> NSRange {
+            print(#function)
+            return newSelectedCharRange
         }
     }
 
@@ -399,12 +405,8 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: UIViewRepresent
 
         self.accessibilityIdentifier = accessibilityIdentifier
 
-        // TODO: detect in UIKit?
-//        textKit1Check = NotificationCenter.default.publisher(for: NSTextView.willSwitchToNSLayoutManagerNotification)
-//            .sink { value in
-//                print("==================== Switched to TextKit1 ====================")
-//                print("receive willSwitchToNSLayoutManagerNotification with \(value)")
-//            }
+        // NOTE: detect switch to TextKit1?
+        // set breakpoint at _UITextViewEnablingCompatibilityMode
     }
 
     public func makeUIView(context: Context) -> UITextView {
@@ -466,15 +468,6 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: UIViewRepresent
         // TODO: no textContentStorage in UITextView??
         // textView.textContentStorage.delegate = textContentStorageDelegate
 
-//        // update textView size
-//        textView.minSize = rect.size
-//        textView.frame.size.width = rect.size.width
-//        //textView.frame.size.height = rect.size.height
-//        //textView.frame.size.height = 20000
-//        if let container = textView.textLayoutManager?.textContainer {
-//            container.size = rect.size
-//            container.size.height = CGFloat.greatestFiniteMagnitude
-//        }
         // update view content
         if textView.textStorage.string != textDataSource.text {
             textView.textStorage.beginEditing()
