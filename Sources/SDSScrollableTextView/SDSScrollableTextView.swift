@@ -233,6 +233,8 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
 
         self.sync?(textView, textDataSource)
 
+//        textView.setSelectedRange(NSRange.init(location: 0, length: 0))
+
         return scrollView
     }
 
@@ -333,12 +335,6 @@ open class MyNSTextView: NSTextView {
 
     open override var acceptsFirstResponder: Bool { return true }
 
-//    open override func prepareContent(in rect: NSRect) {
-//        layer!.setNeedsLayout()
-//        super.prepareContent(in: rect)
-//    }
-//    open override class var isCompatibleWithResponsiveScrolling: Bool { return true }
-
     required public init?(coder: NSCoder) {
         fatalError("not implemented")
     }
@@ -349,9 +345,14 @@ open class MyNSTextView: NSTextView {
                 return
             }
         }
-
         super.keyDown(with: event)
     }
+
+//    open override func mouseDown(with event: NSEvent) {
+//        //self.setSelectedRange(NSRange.init(location: 0, length: self.textStorage?.string.count ?? 0))
+//        print(#function)
+//        super.mouseDown(with: event)
+//    }
 }
 #elseif os(iOS)
 // NOTE: contex menu is not implemented for iOS version
