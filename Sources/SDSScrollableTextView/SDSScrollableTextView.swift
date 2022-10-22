@@ -53,6 +53,7 @@ public typealias Sync = (NSUITextView, any TextViewSource) -> Void
 
 public typealias MenuClosure = (NSUITextView, NSUIMenu, NSUIEvent,Int) -> NSUIMenu?
 
+/// wrapped NSTextView/UITextView
 public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
     @ObservedObject var textDataSource: DataSource //MarkdownFile
 
@@ -68,6 +69,18 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
     let sync: Sync?
     let menuClosure: MenuClosure?
 
+    /// initializer
+    /// - Parameters:
+    ///   - textDataSource: text data provider (needs to conform to TextViewSource)
+    ///   - textContentStorageDelegate: delegate
+    ///   - textStorageDelegate: delegate
+    ///   - textLayoutManagerDelegate: delegate
+    ///   - textViewportLayoutControllerDelegate: delegate
+    ///   - control: textview provider for external control
+    ///   - textContentManager: textContentManager
+    ///   - keydownClosure: keydownClosure (make sense only for macOS)
+    ///   - sync: setup closure for setup/update
+    ///   - menuClosure: menu closure (make sense only for macOS)
     public init(_ textDataSource: DataSource,
                 textContentStorageDelegate: NSTextContentStorageDelegate? = nil,
                 textStorageDelegate: NSTextStorageDelegate? = nil,
