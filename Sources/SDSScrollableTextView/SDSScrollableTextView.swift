@@ -182,9 +182,9 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
     }
 
     public func makeNSView(context: Context) -> NSScrollView {
-        logger.info("----------------------------------------")
-        logger.info("SDSScrollableTextView#makeNSView")
-        logger.info("----------------------------------------")
+//        logger.info("----------------------------------------")
+//        logger.info("SDSScrollableTextView#makeNSView")
+//        logger.info("----------------------------------------")
         // scrollview setup
         let scrollView = NSScrollView(frame: rect)
         scrollView.borderType = .lineBorder
@@ -256,9 +256,9 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
     }
 
     public func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        logger.info("----------------------------------------")
-        logger.info("SDSScrollableTextView#updateNSView")
-        logger.info("----------------------------------------")
+//        logger.info("----------------------------------------")
+//        logger.info("SDSScrollableTextView#updateNSView")
+//        logger.info("----------------------------------------")
         //logger.info("SDSScrollableTextView#updateNSView <start>")
         //printSizes(scrollView)
         guard let textView = scrollView.documentView as? NSTextView else { return }
@@ -316,11 +316,11 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
             return menu
         }
 
-        // MARK: for debug
-        public func textView(_ textView: NSTextView, willChangeSelectionFromCharacterRange oldSelectedCharRange: NSRange, toCharacterRange newSelectedCharRange: NSRange) -> NSRange {
-            print(#function)
-            return newSelectedCharRange
-        }
+//        // MARK: for debug
+//        public func textView(_ textView: NSTextView, willChangeSelectionFromCharacterRange oldSelectedCharRange: NSRange, toCharacterRange newSelectedCharRange: NSRange) -> NSRange {
+//            print(#function)
+//            return newSelectedCharRange
+//        }
     }
 
     // utility for debug
