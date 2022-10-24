@@ -262,9 +262,6 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
         //logger.info("SDSScrollableTextView#updateNSView <start>")
         //printSizes(scrollView)
         guard let textView = scrollView.documentView as? NSTextView else { return }
-        if textView != control?.textView {
-            control?.setTextView(textView)
-        }
 
         // NOTE: might call updateNSView without calling makeNSView to switch content
         context.coordinator.parent = self
