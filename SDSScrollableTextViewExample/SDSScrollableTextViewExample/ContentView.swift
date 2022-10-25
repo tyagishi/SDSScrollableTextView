@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 import SDSScrollableTextView
 import SwiftUIDebugUtil
 
@@ -64,7 +65,7 @@ extension TextContainer: TextViewSource {
 
 struct ContentView: View {
     @StateObject var textContainer = TextContainer()
-    @State private var control = TextEditorControl()
+    let command = PassthroughSubject<TextViewOperation,Never>()
 
     var body: some View {
         VStack {
@@ -74,7 +75,8 @@ struct ContentView: View {
                                           rect: geom.frame(in: .local),//  size,  //CGRect(x: 0, y: 0, width: 200, height: 200),
                                           textContentStorageDelegate: nil, textStorageDelegate: nil,
                                           textLayoutManagerDelegate: nil, textViewportLayoutControllerDelegate: nil,
-                                          control: control, textContentManager: nil, keydownClosure: nil,
+                                          textContentManager: nil, keydownClosure: nil,
+                                          commandTextView: command,
                                           accessibilityIdentifier: "SDSScrollableTextEditor")
                 }
                 //SDSPushOutScrollableTextView($text.text, control: control)
@@ -88,21 +90,10 @@ struct ContentView: View {
             HStack {
                 #if os(macOS)
                 Button(action: {
-                    if let textView = control.textView,
-                       let selectedRange = textView.selectedRanges.first as? NSRange {
-                        textView.insertText("a", replacementRange: selectedRange)
-                    }
+                    command.send(.insert(text: "a", range: nil))
                 }, label: {
-                    Text("Add a")
+                    Text("Insert a")
                 })
-                Button(action: {
-                    if let textView = control.textView,
-                       let selectedRange = textView.selectedRanges.first as? NSRange {
-                        let newRange = NSRange(location: selectedRange.location + 1, length: 0)
-                        print("found TextView")
-                        textView.setSelectedRange(newRange)
-                    }
-                }, label: {Text("->")})
                 #endif
             }
         }

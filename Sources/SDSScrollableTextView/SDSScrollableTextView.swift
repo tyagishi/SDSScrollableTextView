@@ -27,6 +27,7 @@ public typealias MyOwnTextContentManager = NSTextContentManager & NSTextStorageO
 
 public enum TextViewOperation {
     case insert(text: String, range: NSRange?)
+    case setRange(range: NSRange)
     case mark(ranges: [NSRange])
     case scrollTo(range: NSRange)
     case needsLayout
@@ -41,7 +42,8 @@ extension SDSScrollableTextView.Coordinator {
             case .insert(let string, let range):
                 guard let range = range ?? textView.nsuiSelectedRange else { return }
                 textView.nsuiInsertText(string, range)
-                break
+            case .setRange(let range):
+                textView.setSelectedRange(range)
             case .scrollTo(let range):
                 textView.scrollRangeToVisible(range)
             case .mark(let ranges):
