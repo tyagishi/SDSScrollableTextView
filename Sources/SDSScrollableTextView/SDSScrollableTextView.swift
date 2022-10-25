@@ -46,7 +46,6 @@ extension SDSScrollableTextView.Coordinator {
                 textView.scrollRangeToVisible(range)
             case .mark(let ranges):
                 for range in ranges {
-                    print("update at \(range)")
                     textView.textStorage?.edited(.editedAttributes, range: range, changeInLength: 0)
                 }
             case .needsLayout:
