@@ -303,9 +303,9 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
         // update view content
         if let textStorage = textView.textStorage {
             if textStorage.string != textDataSource.text {
-                textStorage.beginEditing()
-                textStorage.setAttributedString(NSAttributedString(string: textDataSource.text))
-                textStorage.endEditing()
+                textView.textContentStorage?.performEditingTransaction({
+                    textStorage.setAttributedString(NSAttributedString(string: textDataSource.text))
+                })
             }
         }
         self.configure?(textView, textDataSource)
