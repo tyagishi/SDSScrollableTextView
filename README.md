@@ -1,3 +1,3 @@
 # SDSScrollableTextView
 
-A description of this package.
+Wrapped NSTextView in NSScrollView / UITextView for SwiftUI
