@@ -33,11 +33,12 @@ public enum TextViewOperation {
     case needsLayout
     case needsDisplay
     case makeFirstResponder
+    case markEdited(range: NSRange?)
 }
 extension SDSScrollableTextView.Coordinator {
     public func operation(_ ope: TextViewOperation) {
         guard let textView = textView else { return }
-        DispatchQueue.main.async {
+//        DispatchQueue.main.async {
             switch ope {
             case .insert(let string, let range):
                 guard let range = range ?? textView.nsuiSelectedRange else { return }
@@ -50,6 +51,9 @@ extension SDSScrollableTextView.Coordinator {
                 for range in ranges {
                     textView.textStorage?.edited(.editedAttributes, range: range, changeInLength: 0)
                 }
+            case .markEdited(let range):
+                let range = range ?? textView.string.fullNSRange
+                textView.textStorage?.edited(.editedAttributes, range: range, changeInLength: 0)
             case .needsLayout:
                 textView.needsLayout = true
             case .needsDisplay:
@@ -63,7 +67,7 @@ extension SDSScrollableTextView.Coordinator {
                 break
 #endif
             }
-        }
+//        }
     }
 }
 
@@ -282,8 +286,12 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
         //printSizes(scrollView)
         guard let textView = scrollView.documentView as? NSTextView else { return }
 
-        // MARK: most probably makeCoordinator will NOT called for every makeNSView
+        // MARK: most probably makeCoordinator will NOT be called for every makeNSView
         context.coordinator.parent = self
+        context.coordinator.textView = textView
+        textView.textStorage?.delegate = self.textStorageDelegate
+        textView.textContentStorage?.delegate = self.textContentStorageDelegate
+        textView.textLayoutManager?.delegate = self.textLayoutManagerDelegate
 
         // update textView size
         textView.minSize = rect.size
