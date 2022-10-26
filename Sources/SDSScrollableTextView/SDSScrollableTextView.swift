@@ -304,7 +304,8 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
         }
 
         if let textStorage = textView.textStorage {
-            if textStorage.string != textDataSource.text {
+            if textStorage.string != textDataSource.text,
+               !textView.hasMarkedText() {
                 textView.textContentStorage?.performEditingTransaction({
                     textStorage.setAttributedString(NSAttributedString(string: textDataSource.text))
                 })
