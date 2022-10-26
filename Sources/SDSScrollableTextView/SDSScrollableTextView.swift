@@ -9,8 +9,8 @@ import Foundation
 import SwiftUI
 import Combine
 import os
-
 import SDSNSUIBridge
+import SDSStringExtension
 
 #if os(macOS)
 import AppKit
@@ -253,8 +253,6 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
         localTextView.isVerticallyResizable = true
         localTextView.isHorizontallyResizable = false // does not need to expand/shrink without view size change
 
-//        textContentStorage.textStorage?.setAttributedString(NSAttributedString(string: textDataSource.text))
-
         // NSTextView のサイズを自動で広げてくれる(TextContainer は広げてくれない)
         // .height は、新しい行が追加された時に TextView が広がるために必要
         localTextView.autoresizingMask = [.height]
@@ -268,7 +266,6 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
         context.coordinator.textView = localTextView
 
         self.configure?(localTextView, textDataSource)
-
         return scrollView
     }
 
@@ -285,13 +282,8 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
         //printSizes(scrollView)
         guard let textView = scrollView.documentView as? NSTextView else { return }
 
-        // NOTE: might call updateNSView without calling makeNSView to switch content
+        // MARK: most probably makeCoordinator will NOT called for every makeNSView
         context.coordinator.parent = self
-
-        // update delegate
-        textView.textStorage?.delegate = textStorageDelegate
-        textView.textLayoutManager?.delegate = textLayoutManagerDelegate
-        textView.textContentStorage?.delegate = textContentStorageDelegate
 
         // update textView size
         textView.minSize = rect.size
@@ -302,7 +294,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
             container.size = rect.size
             container.size.height = CGFloat.greatestFiniteMagnitude
         }
-        // update view content
+
         if let textStorage = textView.textStorage {
             if textStorage.string != textDataSource.text {
                 textView.textContentStorage?.performEditingTransaction({
@@ -329,11 +321,10 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
                 })
         }
 
-
-
         public func textDidChange(_ notification: Notification) {
-            guard let textView = notification.object as? NSTextView else { return }
-            self.parent.textDataSource.updateText(textView.string)
+            guard let textView = notification.object as? NSTextView,
+                  let textStorage = textView.textStorage else { return }
+            self.parent.textDataSource.updateText(textStorage.string)
         }
 
         public func textView(_ view: NSTextView, menu: NSMenu, for event: NSEvent, at charIndex: Int) -> NSMenu? {
