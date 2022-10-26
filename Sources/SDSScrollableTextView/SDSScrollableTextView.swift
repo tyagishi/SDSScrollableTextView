@@ -365,10 +365,6 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
 }
 
 open class MyNSTextView: NSTextView {
-    private var fragmentLayerMap: NSMapTable<NSTextLayoutFragment, CALayer> = .weakToWeakObjects()
-    private var contentLayer: CALayer! = nil
-    private var selectionLayer: CALayer! = nil
-
     let keyDownClosure: KeyDownClosure?
 
     init(frame: CGRect, textContainer: NSTextContainer, keyDown: KeyDownClosure? = nil ) {
