@@ -38,7 +38,7 @@ public enum TextViewOperation {
 extension SDSScrollableTextView.Coordinator {
     public func operation(_ ope: TextViewOperation) {
         guard let textView = textView else { return }
-//        DispatchQueue.main.async {
+        DispatchQueue.main.async {
             switch ope {
             case .insert(let string, let range):
                 guard let range = range ?? textView.nsuiSelectedRange else { return }
@@ -67,7 +67,7 @@ extension SDSScrollableTextView.Coordinator {
                 break
 #endif
             }
-//        }
+        }
     }
 }
 
