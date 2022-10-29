@@ -289,9 +289,8 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
         // MARK: most probably makeCoordinator will NOT be called for every makeNSView
         context.coordinator.parent = self
         context.coordinator.textView = textView
-        textView.textStorage?.delegate = self.textStorageDelegate
-        textView.textContentStorage?.delegate = self.textContentStorageDelegate
-        textView.textLayoutManager?.delegate = self.textLayoutManagerDelegate
+
+        self.configure?(textView, textDataSource)
 
         // update textView size
         textView.minSize = rect.size
@@ -311,7 +310,6 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
                 })
             }
         }
-        self.configure?(textView, textDataSource)
     }
 
     public class Coordinator: NSObject, NSTextViewDelegate {
