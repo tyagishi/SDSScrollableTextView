@@ -44,9 +44,13 @@ extension SDSScrollableTextView.Coordinator {
                 guard let range = range ?? textView.nsuiSelectedRange else { return }
                 textView.nsuiInsertText(string, range)
             case .setRange(let range):
-                textView.setSelectedRange(range)
+                DispatchQueue.main.asyncAfter(deadline: .now()+0.01) {
+                    textView.setSelectedRange(range)
+                }
             case .scrollTo(let range):
-                textView.scrollRangeToVisible(range)
+                DispatchQueue.main.asyncAfter(deadline: .now()+0.01) {
+                    textView.scrollRangeToVisible(range)
+                }
             case .mark(let ranges):
                 for range in ranges {
                     textView.textStorage?.edited(.editedAttributes, range: range, changeInLength: 0)
@@ -60,7 +64,7 @@ extension SDSScrollableTextView.Coordinator {
                 textView.needsDisplay = true
             case .makeFirstResponder:
 #if os(macOS)
-                DispatchQueue.main.asyncAfter(deadline: .now()+0.1) {
+                DispatchQueue.main.asyncAfter(deadline: .now()+0.01) {
                     textView.window?.makeFirstResponder(textView)
                 }
 #else
