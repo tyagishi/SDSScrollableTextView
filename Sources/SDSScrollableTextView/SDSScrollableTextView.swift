@@ -84,6 +84,7 @@ public typealias KeyDownClosure = (NSUITextView, NSUIEvent) -> Bool
 public typealias Configure = (NSUITextView, any TextViewSource) -> Void
 
 public typealias MenuClosure = (NSUITextView, NSUIMenu, NSUIEvent,Int) -> NSUIMenu?
+public typealias LinkClickClosure = (NSUITextView, Any, Int) -> Bool
 
 /// wrapped NSTextView/UITextView
 public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
@@ -99,8 +100,7 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
     let sync: Configure?
     let commandTextView: PassthroughSubject<TextViewOperation, Never>?
     let menuClosure: MenuClosure?
-
-
+    let linkClickClosure: LinkClickClosure?
 
     /// initializer
     /// - Parameters:
@@ -123,7 +123,8 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
                 keydownClosure: KeyDownClosure? = nil,
                 configure: Configure? = nil,
                 commandTextView: PassthroughSubject<TextViewOperation, Never>? = nil,
-                menuClosure: MenuClosure? = nil) {
+                menuClosure: MenuClosure? = nil,
+                linkClickClosure: LinkClickClosure? = nil ) {
         self.textDataSource = textDataSource
         self.textContentStorageDelegate = textContentStorageDelegate
         self.textStorageDelegate = textStorageDelegate
@@ -135,6 +136,7 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
         self.sync = configure
         self.commandTextView = commandTextView
         self.menuClosure = menuClosure
+        self.linkClickClosure = linkClickClosure
     }
 
     public var body: some View {
@@ -149,7 +151,8 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
                                   keydownClosure: keyDownClosure,
                                   configure: sync,
                                   commandTextView: commandTextView,
-                                  menuClosure: menuClosure)
+                                  menuClosure: menuClosure,
+                                  linkClickClosure: linkClickClosure )
         }
     }
 }
@@ -171,6 +174,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
     let configure: Configure?
     let commandTextView: PassthroughSubject<TextViewOperation, Never>?
     let menuClosure: MenuClosure?
+    let linkClickClosure: LinkClickClosure?
 
     let accessibilityIdentifier: String?
 
@@ -189,6 +193,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
                 configure: Configure? = nil,
                 commandTextView: PassthroughSubject<TextViewOperation, Never>? = nil,
                 menuClosure: MenuClosure? = nil,
+                linkClickClosure: LinkClickClosure? = nil,
                 accessibilityIdentifier: String? = nil) {
         self.textDataSource = textDataSource
         self.rect = rect
@@ -203,6 +208,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
         self.configure = configure
         self.commandTextView = commandTextView
         self.menuClosure = menuClosure
+        self.linkClickClosure = linkClickClosure
 
         self.accessibilityIdentifier = accessibilityIdentifier
 
@@ -346,6 +352,12 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
                 return menuClose(view, menu, event, charIndex)
             }
             return menu
+        }
+        public func textView(_ textView: NSUITextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
+            if let linkClickClosure = parent.linkClickClosure {
+                return linkClickClosure(textView, link, charIndex)
+            }
+            return false
         }
 
 //        // MARK: for debug
