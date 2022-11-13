@@ -26,6 +26,7 @@ public typealias NSUITextView = UITextView
 public typealias MyOwnTextContentManager = NSTextContentManager & NSTextStorageObserving
 
 public enum TextViewOperation {
+    case loadTextSource
     case insert(text: String, range: NSRange?)
     case setRange(range: NSRange)
     case mark(ranges: [NSRange])
@@ -40,6 +41,10 @@ extension SDSScrollableTextView.Coordinator {
         guard let textView = textView else { return }
         DispatchQueue.main.async {
             switch ope {
+            case .loadTextSource:
+                if let textStorage = textView.textStorage {
+                    textStorage.setAttributedString(NSAttributedString(string: self.parent.textDataSource.text))
+                }
             case .insert(let string, let range):
                 guard let range = range ?? textView.nsuiSelectedRange else { return }
                 textView.nsuiInsertText(string, range)
@@ -312,14 +317,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
             container.size.height = CGFloat.greatestFiniteMagnitude
         }
 
-        if let textStorage = textView.textStorage {
-            if textStorage.string != textDataSource.text,
-               !textView.hasMarkedText() {
-                textView.textContentStorage?.performEditingTransaction({
-                    textStorage.setAttributedString(NSAttributedString(string: textDataSource.text))
-                })
-            }
-        }
+        // now explicit command "loadTextSource" is necessary to load data from outside
     }
 
     public class Coordinator: NSObject, NSTextViewDelegate {
@@ -339,10 +337,28 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
         }
 
         public func textDidChange(_ notification: Notification) {
+            // MARK: --NOTE--
+            // sometime textDidChange will not called for each change in NSTextView
+            // however NSTextView.updateNSView might be called. because of some other resone.
+            // That will make inconsisitencies.
+
+
             guard let textView = notification.object as? NSTextView,
-                  let textStorage = textView.textStorage else { return }
-            self.parent.textDataSource.updateText(textStorage.string)
+                  let textStorage = textView.textStorage,
+                  !textView.hasMarkedText() else { return }
+
+            self.parent.textDataSource.updateText(textView.string)
         }
+
+//        public func textViewDidChangeSelection(_ notification: Notification) {
+//            guard let textView = notification.object as? NSTextView,
+//                  let selection = textView.selectedRanges.first as? NSRange else { return }
+//            print("cursor pos is changed to \(selection.location)")
+//            if selection.location < prevLoc {
+//                print("something strange")
+//            }
+//            prevLoc = selection.location
+//        }
 
         public func textView(_ view: NSTextView, menu: NSMenu, for event: NSEvent, at charIndex: Int) -> NSMenu? {
             // iff necessary, need to insert my own menus into passed menu
