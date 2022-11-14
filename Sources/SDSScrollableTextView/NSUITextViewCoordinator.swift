@@ -23,9 +23,8 @@ public typealias LinkClickClosure = (NSUITextView, Any, Int) -> Bool
 public typealias MenuClosure = (NSUITextView, NSUIMenu, NSUIEvent,Int) -> NSUIMenu?
 
 #if os(macOS)
-public class NSUITextViewCoordinator<TDS: TextViewSource>: NSObject, NSTextViewDelegate {
-    var parent: SDSScrollableTextView<TDS>
-    var textView: NSTextView? = nil
+public class NSUITextViewCoordinator<TDS: TextViewSource>: NSUITextViewBaseCoordinator<TDS> {
+    public var textView: NSTextView? = nil
     let commandTextView: PassthroughSubject<TextViewOperation, Never>?
     let menuClosure: MenuClosure?
     let linkClickClosure: LinkClickClosure?
@@ -37,27 +36,14 @@ public class NSUITextViewCoordinator<TDS: TextViewSource>: NSObject, NSTextViewD
                 _ commandTextView: PassthroughSubject<TextViewOperation, Never>?,
                 _ menuClosure: MenuClosure? = nil,
                 _ linkClickClosure: LinkClickClosure? = nil) {
-        self.parent = parent
         self.commandTextView = commandTextView
         self.menuClosure = menuClosure
         self.linkClickClosure = linkClickClosure
-        super.init()
+        super.init(parent)
         anyCancellable = commandTextView?
             .sink(receiveValue: {ope in
                 self.operation(ope)
             })
-    }
-
-    public func textDidChange(_ notification: Notification) {
-        // MARK: --NOTE--
-        // sometime textDidChange will not called for each change in NSTextView
-        // however NSTextView.updateNSView might be called. because of some other resone.
-        // That will make inconsisitencies.
-        guard let textView = notification.object as? NSTextView,
-              let textStorage = textView.textStorage,
-              !textView.hasMarkedText() else { return }
-
-        self.parent.textDataSource.updateText(textView.string)
     }
 
     public func textView(_ view: NSTextView, menu: NSMenu, for event: NSEvent, at charIndex: Int) -> NSMenu? {

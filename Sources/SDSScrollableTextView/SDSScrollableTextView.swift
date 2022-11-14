@@ -30,10 +30,30 @@ public protocol TextViewSource: Identifiable, ObservableObject {
     var text: String { get }
 }
 
-public typealias CoordinatorProducer<T: TextViewSource> = ((SDSScrollableTextView<T>) -> NSUITextViewCoordinator<T>)
+open class NSUITextViewBaseCoordinator<T: TextViewSource>: NSObject, NSTextViewDelegate {
+    var parent: SDSScrollableTextView<T>
+
+    public init(_ parent: SDSScrollableTextView<T>) {
+        self.parent = parent
+    }
+
+    public func textDidChange(_ notification: Notification) {
+        // MARK: --NOTE--
+        // sometime textDidChange will not called for each change in NSTextView
+        // however NSTextView.updateNSView might be called. because of some other resone.
+        // That will make inconsisitencies.
+        guard let textView = notification.object as? NSUITextView,
+              !textView.hasMarkedText() else { return }
+
+        self.parent.textDataSource.updateText(textView.string)
+    }
+}
+
+
+public typealias CoordinatorProducer<T: TextViewSource> = ((SDSScrollableTextView<T>) -> NSUITextViewBaseCoordinator<T>)
 
 public typealias KeyDownClosure = (NSUITextView, NSUIEvent) -> Bool
-public typealias Configure = (NSUITextView, any TextViewSource) -> Void
+public typealias UpdateTextView<T: TextViewSource> = (NSUITextView, T, NSUITextViewBaseCoordinator<T>?) -> Void
 
 
 /// wrapped NSTextView/UITextView
@@ -50,7 +70,7 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
     let coordinatorProducer: CoordinatorProducer<DataSource>
 
     let keyDownClosure: KeyDownClosure?
-    let sync: Configure?
+    let updateTextView: UpdateTextView<DataSource>?
 
     /// initializer
     /// - Parameters:
@@ -72,7 +92,7 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
                 textContentManager: MyOwnTextContentManager? = nil,
                 coordinatorProducer: @escaping CoordinatorProducer<DataSource>,
                 keydownClosure: KeyDownClosure? = nil,
-                configure: Configure? = nil) {
+                updateTextView: UpdateTextView<DataSource>? = nil) {
         self.textDataSource = textDataSource
         self.textContentStorageDelegate = textContentStorageDelegate
         self.textStorageDelegate = textStorageDelegate
@@ -84,21 +104,21 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
         self.coordinatorProducer = coordinatorProducer
 
         self.keyDownClosure = keydownClosure
-        self.sync = configure
+        self.updateTextView = updateTextView
     }
 
     public var body: some View {
         GeometryReader { geom in
-            SDSScrollableTextView(textDataSource,
-                                  rect: geom.frame(in: .local),
-                                  textContentStorageDelegate: textContentStorageDelegate,
-                                  textStorageDelegate: textStorageDelegate,
-                                  textLayoutManagerDelegate: textLayoutManagerDelegate,
-                                  textViewportLayoutControllerDelegate: textViewportLayoutControllerDelegate,
-                                  textContentManager: textContentManager,
-                                  coordinatorProducer: coordinatorProducer,
-                                  keydownClosure: keyDownClosure,
-                                  configure: sync)
+            SDSScrollableTextView<DataSource>(textDataSource,
+                                              rect: geom.frame(in: .local),
+                                              textContentStorageDelegate: textContentStorageDelegate,
+                                              textStorageDelegate: textStorageDelegate,
+                                              textLayoutManagerDelegate: textLayoutManagerDelegate,
+                                              textViewportLayoutControllerDelegate: textViewportLayoutControllerDelegate,
+                                              textContentManager: textContentManager,
+                                              coordinatorProducer: coordinatorProducer,
+                                              keydownClosure: keyDownClosure,
+                                              updateTextView: updateTextView)
         }
     }
 }
@@ -117,7 +137,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
 
     let textContentManager: MyOwnTextContentManager? // not used yet
     let keyDownClosure: KeyDownClosure?
-    let configure: Configure?
+    let updateTextView: UpdateTextView<DataSource>?
 
     let coordinatorProducer: CoordinatorProducer<DataSource>
 
@@ -136,7 +156,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
                 textContentManager: MyOwnTextContentManager? = nil,
                 coordinatorProducer: @escaping CoordinatorProducer<DataSource>,
                 keydownClosure: KeyDownClosure? = nil,
-                configure: Configure? = nil,
+                updateTextView: UpdateTextView<DataSource>? = nil,
                 accessibilityIdentifier: String? = nil) {
         self.textDataSource = textDataSource
         self.rect = rect
@@ -151,7 +171,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
         self.coordinatorProducer = coordinatorProducer
 
         self.keyDownClosure = keydownClosure
-        self.configure = configure
+        self.updateTextView = updateTextView
 
         self.accessibilityIdentifier = accessibilityIdentifier
 
@@ -220,14 +240,14 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
 
         // assemble
         scrollView.documentView = localTextView
-        context.coordinator.textView = localTextView
+        //context.coordinator.textView = localTextView
 
-        self.configure?(localTextView, textDataSource)
+        self.updateTextView?(localTextView, textDataSource, context.coordinator)
         return scrollView
     }
 
 
-    public func makeCoordinator() -> NSUITextViewCoordinator<DataSource> {
+    public func makeCoordinator() -> NSUITextViewBaseCoordinator<DataSource> {
         //return NSUITextViewCoordinator(self, commandTextView)
         return coordinatorProducer(self)
     }
@@ -242,9 +262,9 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
 
         // MARK: most probably makeCoordinator will NOT be called for every makeNSView
         context.coordinator.parent = self
-        context.coordinator.textView = textView
+        //context.coordinator.textView = textView
 
-        self.configure?(textView, textDataSource)
+        self.updateTextView?(textView, textDataSource, nil)
 
         // update textView size
         textView.minSize = rect.size
@@ -315,7 +335,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: UIViewRepresent
 
     let textContentManager: MyOwnTextContentManager? // not used yet
     let keyDownClosure: KeyDownClosure?
-    let configure: Configure?
+    let configure: UpdateTextView?
     let commandTextView: PassthroughSubject<TextViewOperation, Never>?
 
     let accessibilityIdentifier: String?
@@ -328,7 +348,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: UIViewRepresent
                 textViewportLayoutControllerDelegate: NSTextViewportLayoutControllerDelegate? = nil,
                 textContentManager: MyOwnTextContentManager? = nil,
                 keydownClosure: KeyDownClosure? = nil,
-                configure: Configure? = nil,
+                configure: UpdateTextView? = nil,
                 commandTextView: PassthroughSubject<TextViewOperation, Never>? = nil,
                 menuClosure: MenuClosure? = nil,
                 accessibilityIdentifier: String? = nil) {

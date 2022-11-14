@@ -75,8 +75,10 @@ struct ContentView: View {
                                           rect: geom.frame(in: .local),//  size,  //CGRect(x: 0, y: 0, width: 200, height: 200),
                                           textContentStorageDelegate: nil, textStorageDelegate: nil,
                                           textLayoutManagerDelegate: nil, textViewportLayoutControllerDelegate: nil,
-                                          textContentManager: nil, keydownClosure: nil,
-                                          commandTextView: command,
+                                          textContentManager: nil,
+                                          coordinatorProducer: coordinatorProducer,
+                                          keydownClosure: nil,
+                                          updateTextView: updateTextView,
                                           accessibilityIdentifier: "SDSScrollableTextEditor")
                 }
                 //SDSPushOutScrollableTextView($text.text, control: control)
@@ -101,6 +103,14 @@ struct ContentView: View {
         .frame(maxHeight: 5000)
         .frame(maxWidth: 5000)
             .padding()
+    }
+
+    func coordinatorProducer<TextContainer>(_ scrollableTextView: SDSScrollableTextView<TextContainer>) -> NSUITextViewBaseCoordinator<TextContainer>{
+        return NSUITextViewBaseCoordinator(scrollableTextView)
+    }
+
+    func updateTextView<TextContainer>(_ textView: NSUITextView,_ container: TextContainer,_ coordinator: NSUITextViewBaseCoordinator<TextContainer>?) -> Void {
+        textView.string = container.text
     }
 }
 
