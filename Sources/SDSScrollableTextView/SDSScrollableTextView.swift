@@ -25,71 +25,16 @@ public typealias NSUITextView = UITextView
 
 public typealias MyOwnTextContentManager = NSTextContentManager & NSTextStorageObserving
 
-public enum TextViewOperation {
-    case loadTextSource
-    case insert(text: String, range: NSRange?)
-    case setRange(range: NSRange)
-    case mark(ranges: [NSRange])
-    case scrollTo(range: NSRange)
-    case needsLayout
-    case needsDisplay
-    case makeFirstResponder
-    case markEdited(range: NSRange?)
-}
-extension SDSScrollableTextView.Coordinator {
-    public func operation(_ ope: TextViewOperation) {
-        guard let textView = textView else { return }
-        DispatchQueue.main.async {
-            switch ope {
-            case .loadTextSource:
-                if let textStorage = textView.textStorage {
-                    textStorage.setAttributedString(NSAttributedString(string: self.parent.textDataSource.text))
-                }
-            case .insert(let string, let range):
-                guard let range = range ?? textView.nsuiSelectedRange else { return }
-                textView.nsuiInsertText(string, range)
-            case .setRange(let range):
-                DispatchQueue.main.asyncAfter(deadline: .now()+0.01) {
-                    textView.setSelectedRange(range)
-                }
-            case .scrollTo(let range):
-                DispatchQueue.main.asyncAfter(deadline: .now()+0.01) {
-                    textView.scrollRangeToVisible(range)
-                }
-            case .mark(let ranges):
-                for range in ranges {
-                    textView.textStorage?.edited(.editedAttributes, range: range, changeInLength: 0)
-                }
-            case .markEdited(let range):
-                let range = range ?? textView.string.fullNSRange
-                textView.textStorage?.edited(.editedAttributes, range: range, changeInLength: 0)
-            case .needsLayout:
-                textView.needsLayout = true
-            case .needsDisplay:
-                textView.needsDisplay = true
-            case .makeFirstResponder:
-#if os(macOS)
-                DispatchQueue.main.asyncAfter(deadline: .now()+0.01) {
-                    textView.window?.makeFirstResponder(textView)
-                }
-#else
-                break
-#endif
-            }
-        }
-    }
-}
-
 public protocol TextViewSource: Identifiable, ObservableObject {
     func updateText(_ str: String)
     var text: String { get }
 }
 
+public typealias CoordinatorProducer<T: TextViewSource> = ((SDSScrollableTextView<T>) -> NSUITextViewCoordinator<T>)
+
 public typealias KeyDownClosure = (NSUITextView, NSUIEvent) -> Bool
 public typealias Configure = (NSUITextView, any TextViewSource) -> Void
 
-public typealias MenuClosure = (NSUITextView, NSUIMenu, NSUIEvent,Int) -> NSUIMenu?
-public typealias LinkClickClosure = (NSUITextView, Any, Int) -> Bool
 
 /// wrapped NSTextView/UITextView
 public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
@@ -101,11 +46,11 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
     let textViewportLayoutControllerDelegate: NSTextViewportLayoutControllerDelegate?
 
     let textContentManager: MyOwnTextContentManager?
+
+    let coordinatorProducer: CoordinatorProducer<DataSource>
+
     let keyDownClosure: KeyDownClosure?
     let sync: Configure?
-    let commandTextView: PassthroughSubject<TextViewOperation, Never>?
-    let menuClosure: MenuClosure?
-    let linkClickClosure: LinkClickClosure?
 
     /// initializer
     /// - Parameters:
@@ -125,11 +70,9 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
                 textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil,
                 textViewportLayoutControllerDelegate: NSTextViewportLayoutControllerDelegate? = nil,
                 textContentManager: MyOwnTextContentManager? = nil,
+                coordinatorProducer: @escaping CoordinatorProducer<DataSource>,
                 keydownClosure: KeyDownClosure? = nil,
-                configure: Configure? = nil,
-                commandTextView: PassthroughSubject<TextViewOperation, Never>? = nil,
-                menuClosure: MenuClosure? = nil,
-                linkClickClosure: LinkClickClosure? = nil ) {
+                configure: Configure? = nil) {
         self.textDataSource = textDataSource
         self.textContentStorageDelegate = textContentStorageDelegate
         self.textStorageDelegate = textStorageDelegate
@@ -137,11 +80,11 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
         self.textViewportLayoutControllerDelegate = textViewportLayoutControllerDelegate
 
         self.textContentManager = textContentManager
+
+        self.coordinatorProducer = coordinatorProducer
+
         self.keyDownClosure = keydownClosure
         self.sync = configure
-        self.commandTextView = commandTextView
-        self.menuClosure = menuClosure
-        self.linkClickClosure = linkClickClosure
     }
 
     public var body: some View {
@@ -153,11 +96,9 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
                                   textLayoutManagerDelegate: textLayoutManagerDelegate,
                                   textViewportLayoutControllerDelegate: textViewportLayoutControllerDelegate,
                                   textContentManager: textContentManager,
+                                  coordinatorProducer: coordinatorProducer,
                                   keydownClosure: keyDownClosure,
-                                  configure: sync,
-                                  commandTextView: commandTextView,
-                                  menuClosure: menuClosure,
-                                  linkClickClosure: linkClickClosure )
+                                  configure: sync)
         }
     }
 }
@@ -177,9 +118,8 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
     let textContentManager: MyOwnTextContentManager? // not used yet
     let keyDownClosure: KeyDownClosure?
     let configure: Configure?
-    let commandTextView: PassthroughSubject<TextViewOperation, Never>?
-    let menuClosure: MenuClosure?
-    let linkClickClosure: LinkClickClosure?
+
+    let coordinatorProducer: CoordinatorProducer<DataSource>
 
     let accessibilityIdentifier: String?
 
@@ -194,11 +134,9 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
                 textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil,
                 textViewportLayoutControllerDelegate: NSTextViewportLayoutControllerDelegate? = nil,
                 textContentManager: MyOwnTextContentManager? = nil,
+                coordinatorProducer: @escaping CoordinatorProducer<DataSource>,
                 keydownClosure: KeyDownClosure? = nil,
                 configure: Configure? = nil,
-                commandTextView: PassthroughSubject<TextViewOperation, Never>? = nil,
-                menuClosure: MenuClosure? = nil,
-                linkClickClosure: LinkClickClosure? = nil,
                 accessibilityIdentifier: String? = nil) {
         self.textDataSource = textDataSource
         self.rect = rect
@@ -209,11 +147,11 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
         self.textViewportLayoutControllerDelegate = textViewportLayoutControllerDelegate
 
         self.textContentManager = textContentManager
+
+        self.coordinatorProducer = coordinatorProducer
+
         self.keyDownClosure = keydownClosure
         self.configure = configure
-        self.commandTextView = commandTextView
-        self.menuClosure = menuClosure
-        self.linkClickClosure = linkClickClosure
 
         self.accessibilityIdentifier = accessibilityIdentifier
 
@@ -289,8 +227,9 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
     }
 
 
-    public func makeCoordinator() -> Coordinator {
-        return Coordinator(self, commandTextView)
+    public func makeCoordinator() -> NSUITextViewCoordinator<DataSource> {
+        //return NSUITextViewCoordinator(self, commandTextView)
+        return coordinatorProducer(self)
     }
 
     public func updateNSView(_ scrollView: NSScrollView, context: Context) {
@@ -318,69 +257,6 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
         }
 
         // now explicit command "loadTextSource" is necessary to load data from outside
-    }
-
-    public class Coordinator: NSObject, NSTextViewDelegate {
-        var parent: SDSScrollableTextView
-        var textView: NSTextView? = nil
-        let commandTextView: PassthroughSubject<TextViewOperation, Never>?
-        var anyCancellable: AnyCancellable? = nil
-
-        init(_ parent: SDSScrollableTextView,_ commandTextView: PassthroughSubject<TextViewOperation, Never>? ) {
-            self.parent = parent
-            self.commandTextView = commandTextView
-            super.init()
-            anyCancellable = commandTextView?
-                .sink(receiveValue: {ope in
-                    self.operation(ope)
-                })
-        }
-
-        public func textDidChange(_ notification: Notification) {
-            // MARK: --NOTE--
-            // sometime textDidChange will not called for each change in NSTextView
-            // however NSTextView.updateNSView might be called. because of some other resone.
-            // That will make inconsisitencies.
-
-
-            guard let textView = notification.object as? NSTextView,
-                  let textStorage = textView.textStorage,
-                  !textView.hasMarkedText() else { return }
-
-            self.parent.textDataSource.updateText(textView.string)
-        }
-
-//        public func textViewDidChangeSelection(_ notification: Notification) {
-//            guard let textView = notification.object as? NSTextView,
-//                  let selection = textView.selectedRanges.first as? NSRange else { return }
-//            print("cursor pos is changed to \(selection.location)")
-//            if selection.location < prevLoc {
-//                print("something strange")
-//            }
-//            prevLoc = selection.location
-//        }
-
-        public func textView(_ view: NSTextView, menu: NSMenu, for event: NSEvent, at charIndex: Int) -> NSMenu? {
-            // iff necessary, need to insert my own menus into passed menu
-            //let myMenuItem = NSMenuItem(title: "MyMenu", action: nil, keyEquivalent: "")
-            //menu.addItem(myMenuItem)
-            if let menuClose = parent.menuClosure {
-                return menuClose(view, menu, event, charIndex)
-            }
-            return menu
-        }
-        public func textView(_ textView: NSUITextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
-            if let linkClickClosure = parent.linkClickClosure {
-                return linkClickClosure(textView, link, charIndex)
-            }
-            return false
-        }
-
-//        // MARK: for debug
-//        public func textView(_ textView: NSTextView, willChangeSelectionFromCharacterRange oldSelectedCharRange: NSRange, toCharacterRange newSelectedCharRange: NSRange) -> NSRange {
-//            print(#function)
-//            return newSelectedCharRange
-//        }
     }
 
     // utility for debug
