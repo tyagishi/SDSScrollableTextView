@@ -88,7 +88,11 @@ extension NSUITextViewCoordinator {
             switch ope {
             case .loadTextSource:
                 if let textStorage = textView.textStorage {
-                    textStorage.setAttributedString(NSAttributedString(string: self.parent.textDataSource.text))
+                    Task {
+                        let text = await self.parent.textDataSource.text
+                        textStorage.setAttributedString(NSAttributedString(string: text))
+                    }
+                    //textStorage.setAttributedString(NSAttributedString(string: self.parent.textDataSource.text))
                 }
             case .insert(let string, let range):
                 guard let range = range ?? textView.nsuiSelectedRange else { return }

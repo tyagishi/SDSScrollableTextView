@@ -26,8 +26,8 @@ public typealias NSUITextView = UITextView
 public typealias MyOwnTextContentManager = NSTextContentManager & NSTextStorageObserving
 
 public protocol TextViewSource: Identifiable, ObservableObject {
-    func updateText(_ str: String)
-    var text: String { get }
+    func updateText(_ str: String) async
+    var text: String { get async }
 }
 
 open class NSUITextViewBaseCoordinator<T: TextViewSource>: NSObject, NSTextViewDelegate {
@@ -44,8 +44,9 @@ open class NSUITextViewBaseCoordinator<T: TextViewSource>: NSObject, NSTextViewD
         // That will make inconsisitencies.
         guard let textView = notification.object as? NSUITextView,
               !textView.hasMarkedText() else { return }
-
-        self.parent.textDataSource.updateText(textView.string)
+//        Task {
+//            await self.parent.textDataSource.updateText(textView.string)
+//        }
     }
 }
 
