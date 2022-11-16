@@ -76,6 +76,7 @@ public enum TextViewOperation {
     case setRange(range: NSRange)
     case mark(ranges: [NSRange])
     case scrollTo(range: NSRange)
+    case addAttribute(key: NSAttributedString.Key, value: Any, range: NSRange)
     case needsLayout
     case needsDisplay
     case makeFirstResponder
@@ -105,6 +106,8 @@ extension NSUITextViewCoordinator {
                 DispatchQueue.main.asyncAfter(deadline: .now()+0.01) {
                     textView.scrollRangeToVisible(range)
                 }
+            case .addAttribute(let key, let value, let range):
+                textView.textStorage?.addAttribute(key, value: value, range: range)
             case .mark(let ranges):
                 for range in ranges {
                     textView.textStorage?.edited(.editedAttributes, range: range, changeInLength: 0)
