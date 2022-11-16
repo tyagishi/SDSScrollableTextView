@@ -44,9 +44,9 @@ open class NSUITextViewBaseCoordinator<T: TextViewSource>: NSObject, NSTextViewD
         // That will make inconsisitencies.
         guard let textView = notification.object as? NSUITextView,
               !textView.hasMarkedText() else { return }
-//        Task {
-//            await self.parent.textDataSource.updateText(textView.string)
-//        }
+        Task {
+            await self.parent.textDataSource.updateText(textView.string)
+        }
     }
 }
 
