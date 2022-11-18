@@ -31,10 +31,16 @@ public protocol TextViewSource: Identifiable, ObservableObject {
 }
 
 open class NSUITextViewBaseCoordinator<T: TextViewSource>: NSObject, NSTextViewDelegate {
-    var parent: SDSScrollableTextView<T>
+    public var parent: SDSScrollableTextView<T>
+    let menuClosure: MenuClosure?
+    let linkClickClosure: LinkClickClosure?
 
-    public init(_ parent: SDSScrollableTextView<T>) {
+    public init(_ parent: SDSScrollableTextView<T>,
+                _ menuClosure: MenuClosure? = nil,
+                _ linkClickClosure: LinkClickClosure? = nil) {
         self.parent = parent
+        self.menuClosure = menuClosure
+        self.linkClickClosure = linkClickClosure
     }
 
     public func textDidChange(_ notification: Notification) {
@@ -44,9 +50,24 @@ open class NSUITextViewBaseCoordinator<T: TextViewSource>: NSObject, NSTextViewD
         // That will make inconsisitencies.
         guard let textView = notification.object as? NSUITextView,
               !textView.hasMarkedText() else { return }
-        Task {
+        Task { @MainActor in 
             await self.parent.textDataSource.updateText(textView.string)
         }
+    }
+    public func textView(_ view: NSTextView, menu: NSMenu, for event: NSEvent, at charIndex: Int) -> NSMenu? {
+        // iff necessary, need to insert my own menus into passed menu
+        //let myMenuItem = NSMenuItem(title: "MyMenu", action: nil, keyEquivalent: "")
+        //menu.addItem(myMenuItem)
+        if let menuClose = self.menuClosure {
+            return menuClose(view, menu, event, charIndex)
+        }
+        return menu
+    }
+    public func textView(_ textView: NSUITextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
+        if let linkClickClosure = self.linkClickClosure {
+            return linkClickClosure(textView, link, charIndex)
+        }
+        return false
     }
 }
 
@@ -265,7 +286,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
         context.coordinator.parent = self
         //context.coordinator.textView = textView
 
-        self.updateTextView?(textView, textDataSource, nil)
+        self.updateTextView?(textView, textDataSource, context.coordinator)
 
         // update textView size
         textView.minSize = rect.size

@@ -26,8 +26,6 @@ public typealias MenuClosure = (NSUITextView, NSUIMenu, NSUIEvent,Int) -> NSUIMe
 public class NSUITextViewCoordinator<TDS: TextViewSource>: NSUITextViewBaseCoordinator<TDS> {
     public var textView: NSTextView? = nil
     let commandTextView: PassthroughSubject<TextViewOperation, Never>?
-    let menuClosure: MenuClosure?
-    let linkClickClosure: LinkClickClosure?
 
 
     var anyCancellable: AnyCancellable? = nil
@@ -37,30 +35,14 @@ public class NSUITextViewCoordinator<TDS: TextViewSource>: NSUITextViewBaseCoord
                 _ menuClosure: MenuClosure? = nil,
                 _ linkClickClosure: LinkClickClosure? = nil) {
         self.commandTextView = commandTextView
-        self.menuClosure = menuClosure
-        self.linkClickClosure = linkClickClosure
-        super.init(parent)
+        super.init(parent, menuClosure, linkClickClosure)
         anyCancellable = commandTextView?
             .sink(receiveValue: {ope in
                 self.operation(ope)
             })
     }
 
-    public func textView(_ view: NSTextView, menu: NSMenu, for event: NSEvent, at charIndex: Int) -> NSMenu? {
-        // iff necessary, need to insert my own menus into passed menu
-        //let myMenuItem = NSMenuItem(title: "MyMenu", action: nil, keyEquivalent: "")
-        //menu.addItem(myMenuItem)
-        if let menuClose = self.menuClosure {
-            return menuClose(view, menu, event, charIndex)
-        }
-        return menu
-    }
-    public func textView(_ textView: NSUITextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
-        if let linkClickClosure = self.linkClickClosure {
-            return linkClickClosure(textView, link, charIndex)
-        }
-        return false
-    }
+
 
 //        // MARK: for debug
 //        public func textView(_ textView: NSTextView, willChangeSelectionFromCharacterRange oldSelectedCharRange: NSRange, toCharacterRange newSelectedCharRange: NSRange) -> NSRange {
