@@ -95,8 +95,14 @@ extension NSUITextViewCoordinator {
                     textView.textStorage?.edited(.editedAttributes, range: range, changeInLength: 0)
                 }
             case .markEdited(let range):
-                let range = range ?? textView.string.fullNSRange
-                textView.textStorage?.edited(.editedAttributes, range: range, changeInLength: 0)
+                guard let text = textView.textStorage?.string else { break }
+                if let range = range,
+                   !text.isValid(nsRange: range) {
+                    print("invalid range?")
+                    break
+                }
+                let markRange = range ?? text.fullNSRange
+                textView.textStorage?.edited(.editedAttributes, range: markRange, changeInLength: 0)
             case .needsLayout:
                 textView.needsLayout = true
             case .needsDisplay:
