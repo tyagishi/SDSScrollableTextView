@@ -56,13 +56,13 @@ public enum TextViewOperation {
     case loadTextSource
     case insert(text: String, range: NSRange?)
     case setRange(range: NSRange)
-    case mark(ranges: [NSRange])
+    case markEditeds(ranges: [NSRange])
+    case markEdited(range: NSRange?)
     case scrollTo(range: NSRange)
     case addAttribute(key: NSAttributedString.Key, value: Any, range: NSRange)
     case needsLayout
     case needsDisplay
     case makeFirstResponder
-    case markEdited(range: NSRange?)
 }
 extension NSUITextViewCoordinator {
     public func operation(_ ope: TextViewOperation) {
@@ -90,8 +90,10 @@ extension NSUITextViewCoordinator {
                 }
             case .addAttribute(let key, let value, let range):
                 textView.textStorage?.addAttribute(key, value: value, range: range)
-            case .mark(let ranges):
+            case .markEditeds(let ranges):
+                guard let text = textView.textStorage?.string else { break }
                 for range in ranges {
+                    if !text.isValid(nsRange: range) { print("invalid range?"); break }
                     textView.textStorage?.edited(.editedAttributes, range: range, changeInLength: 0)
                 }
             case .markEdited(let range):
