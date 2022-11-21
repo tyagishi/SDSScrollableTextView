@@ -93,14 +93,14 @@ extension NSUITextViewCoordinator {
             case .markEditeds(let ranges):
                 guard let text = textView.textStorage?.string else { break }
                 for range in ranges {
-                    if !text.isValid(nsRange: range) { print("invalid range?"); break }
+                    if !text.isValid(nsRange: range) { print("invalid range? in markEditeds command"); break }
                     textView.textStorage?.edited(.editedAttributes, range: range, changeInLength: 0)
                 }
             case .markEdited(let range):
                 guard let text = textView.textStorage?.string else { break }
                 if let range = range,
                    !text.isValid(nsRange: range) {
-                    print("invalid range?")
+                    print("invalid range? in markEdited command")
                     break
                 }
                 let markRange = range ?? text.fullNSRange
