@@ -65,7 +65,6 @@ extension TextContainer: TextViewSource {
 
 struct ContentView: View {
     @StateObject var textContainer = TextContainer()
-    let command = PassthroughSubject<TextViewOperation,Never>()
 
     var body: some View {
         VStack {
@@ -89,15 +88,6 @@ struct ContentView: View {
                     .accessibilityIdentifier("TextEditor")
                     .accessibilityLabel("MyTextEditor")
             }
-            HStack {
-                #if os(macOS)
-                Button(action: {
-                    command.send(.insert(text: "a", range: nil))
-                }, label: {
-                    Text("Insert a")
-                })
-                #endif
-            }
         }
         .debugBorder(.red)
         .frame(maxHeight: 5000)
@@ -110,7 +100,9 @@ struct ContentView: View {
     }
 
     func updateTextView<TextContainer>(_ textView: NSUITextView,_ container: TextContainer,_ coordinator: NSUITextViewBaseCoordinator<TextContainer>?) -> Void {
-        textView.string = container.text
+        Task {
+            textView.string = await container.text
+        }
     }
 }
 

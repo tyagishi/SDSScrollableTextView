@@ -19,9 +19,6 @@ import UIKit
 #error("unsupported platform")
 #endif
 
-public typealias LinkClickClosure = (NSUITextView, Any, Int) -> Bool
-public typealias MenuClosure = (NSUITextView, NSUIMenu, NSUIEvent,Int) -> NSUIMenu?
-
 #if os(macOS)
 public class NSUITextViewCoordinator<TDS: TextViewSource>: NSUITextViewBaseCoordinator<TDS> {
     public var textView: NSTextView? = nil
@@ -41,9 +38,6 @@ public class NSUITextViewCoordinator<TDS: TextViewSource>: NSUITextViewBaseCoord
                 self.operation(ope)
             })
     }
-
-
-
 //        // MARK: for debug
 //        public func textView(_ textView: NSTextView, willChangeSelectionFromCharacterRange oldSelectedCharRange: NSRange, toCharacterRange newSelectedCharRange: NSRange) -> NSRange {
 //            print(#function)

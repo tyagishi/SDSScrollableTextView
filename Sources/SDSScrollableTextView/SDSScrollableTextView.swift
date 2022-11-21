@@ -30,46 +30,6 @@ public protocol TextViewSource: Identifiable, ObservableObject {
     var text: String { get async }
 }
 
-open class NSUITextViewBaseCoordinator<T: TextViewSource>: NSObject, NSTextViewDelegate {
-    public var parent: SDSScrollableTextView<T>
-    let menuClosure: MenuClosure?
-    let linkClickClosure: LinkClickClosure?
-
-    public init(_ parent: SDSScrollableTextView<T>,
-                _ menuClosure: MenuClosure? = nil,
-                _ linkClickClosure: LinkClickClosure? = nil) {
-        self.parent = parent
-        self.menuClosure = menuClosure
-        self.linkClickClosure = linkClickClosure
-    }
-
-    public func textDidChange(_ notification: Notification) {
-        // MARK: --NOTE--
-        // sometime textDidChange will not called for each change in NSTextView
-        // however NSTextView.updateNSView might be called. because of some other resone.
-        // That will make inconsisitencies.
-        guard let textView = notification.object as? NSUITextView,
-              !textView.hasMarkedText() else { return }
-        Task { @MainActor in 
-            await self.parent.textDataSource.updateText(textView.string)
-        }
-    }
-    public func textView(_ view: NSTextView, menu: NSMenu, for event: NSEvent, at charIndex: Int) -> NSMenu? {
-        // iff necessary, need to insert my own menus into passed menu
-        //let myMenuItem = NSMenuItem(title: "MyMenu", action: nil, keyEquivalent: "")
-        //menu.addItem(myMenuItem)
-        if let menuClose = self.menuClosure {
-            return menuClose(view, menu, event, charIndex)
-        }
-        return menu
-    }
-    public func textView(_ textView: NSUITextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
-        if let linkClickClosure = self.linkClickClosure {
-            return linkClickClosure(textView, link, charIndex)
-        }
-        return false
-    }
-}
 
 
 public typealias CoordinatorProducer<T: TextViewSource> = ((SDSScrollableTextView<T>) -> NSUITextViewBaseCoordinator<T>)
