@@ -40,7 +40,7 @@ public typealias UpdateTextView<T: TextViewSource> = (NSUITextView, T, NSUITextV
 
 /// wrapped NSTextView/UITextView
 public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
-    @ObservedObject var textDataSource: DataSource //MarkdownFile
+    @ObservedObject public var textDataSource: DataSource //MarkdownFile
 
     let textContentStorageDelegate: NSTextContentStorageDelegate?
     let textStorageDelegate: NSTextStorageDelegate?
@@ -109,7 +109,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
     public typealias NSViewType = NSScrollView
     let logger = Logger(subsystem: "com.smalldesksoftware.SDSScrollableTextView", category: "SDSScrollableTextView")
 
-    @ObservedObject var textDataSource: DataSource
+    @ObservedObject public var textDataSource: DataSource
     let rect: CGRect
 
     let textContentStorageDelegate: NSTextContentStorageDelegate?
