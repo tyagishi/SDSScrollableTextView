@@ -307,7 +307,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: UIViewRepresent
     public typealias UIViewType = UITextView
     let logger = Logger(subsystem: "com.smalldesksoftware.SDSScrollableTextView", category: "SDSScrollableTextView")
 
-    @ObservedObject var textDataSource: DataSource
+    @ObservedObject public var textDataSource: DataSource
     let rect: CGRect
 
     let textContentStorageDelegate: NSTextContentStorageDelegate?
