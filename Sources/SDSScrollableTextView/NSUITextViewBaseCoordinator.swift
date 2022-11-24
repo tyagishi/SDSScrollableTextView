@@ -22,7 +22,7 @@ import UIKit
 public typealias LinkClickClosure = (NSUITextView, Any, Int) -> Bool
 public typealias MenuClosure = (NSUITextView, NSUIMenu, NSUIEvent,Int) -> NSUIMenu?
 
-open class NSUITextViewBaseCoordinator<T: TextViewSource>: NSObject, NSTextViewDelegate {
+open class NSUITextViewBaseCoordinator<T: TextViewSource>: NSObject, NSUITextViewDelegate {
     public var parent: SDSScrollableTextView<T>
     let menuClosure: MenuClosure?
     let linkClickClosure: LinkClickClosure?
@@ -35,6 +35,18 @@ open class NSUITextViewBaseCoordinator<T: TextViewSource>: NSObject, NSTextViewD
         self.linkClickClosure = linkClickClosure
     }
 
+    // for iOS
+    #if os(iOS)
+    public func textViewDidChange(_ textView: UITextView) {
+        guard textView.markedTextRange == nil else { return }
+        Task { @MainActor in
+            await self.parent.textDataSource.updateText(textView.text)
+        }
+    }
+    #endif
+
+    // for macOS
+    #if os(macOS)
     public func textDidChange(_ notification: Notification) {
         // MARK: --NOTE--
         // sometime textDidChange will not called for each change in NSTextView
@@ -46,6 +58,8 @@ open class NSUITextViewBaseCoordinator<T: TextViewSource>: NSObject, NSTextViewD
             await self.parent.textDataSource.updateText(textView.string)
         }
     }
+    #endif
+    #if os(macOS)
     public func textView(_ view: NSTextView, menu: NSMenu, for event: NSEvent, at charIndex: Int) -> NSMenu? {
         if let menuClose = self.menuClosure {
             return menuClose(view, menu, event, charIndex)
@@ -58,4 +72,5 @@ open class NSUITextViewBaseCoordinator<T: TextViewSource>: NSObject, NSTextViewD
         }
         return false
     }
+#endif
 }

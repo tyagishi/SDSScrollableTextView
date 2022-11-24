@@ -317,8 +317,9 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: UIViewRepresent
 
     let textContentManager: MyOwnTextContentManager? // not used yet
     let keyDownClosure: KeyDownClosure?
-    let configure: UpdateTextView?
-    let commandTextView: PassthroughSubject<TextViewOperation, Never>?
+    let updateTextView: UpdateTextView<DataSource>?
+
+    let coordinatorProducer: CoordinatorProducer<DataSource>
 
     let accessibilityIdentifier: String?
 
@@ -329,10 +330,9 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: UIViewRepresent
                 textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil,
                 textViewportLayoutControllerDelegate: NSTextViewportLayoutControllerDelegate? = nil,
                 textContentManager: MyOwnTextContentManager? = nil,
+                coordinatorProducer: @escaping CoordinatorProducer<DataSource>,
                 keydownClosure: KeyDownClosure? = nil,
-                configure: UpdateTextView? = nil,
-                commandTextView: PassthroughSubject<TextViewOperation, Never>? = nil,
-                menuClosure: MenuClosure? = nil,
+                updateTextView: UpdateTextView<DataSource>? = nil,
                 accessibilityIdentifier: String? = nil) {
         self.textDataSource = textDataSource
         self.rect = rect
@@ -343,9 +343,12 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: UIViewRepresent
         self.textViewportLayoutControllerDelegate = textViewportLayoutControllerDelegate
 
         self.textContentManager = textContentManager
+
+        self.coordinatorProducer = coordinatorProducer
+
         self.keyDownClosure = keydownClosure
-        self.configure = configure
-        self.commandTextView = commandTextView
+        self.updateTextView = updateTextView
+
         self.accessibilityIdentifier = accessibilityIdentifier
 
         // NOTE: detect switch to TextKit1?
@@ -381,15 +384,14 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: UIViewRepresent
         textView.textStorage.delegate = textStorageDelegate
         textView.delegate = context.coordinator
 
-        context.coordinator.textView = textView
-
-        self.configure?(textView, textDataSource)
+        self.updateTextView?(textView, textDataSource, context.coordinator)
 
         return textView
     }
 
-    public func makeCoordinator() -> Coordinator {
-        return Coordinator(self)
+    public func makeCoordinator() -> NSUITextViewBaseCoordinator<DataSource> {
+        //return NSUITextViewCoordinator(self, commandTextView)
+        return coordinatorProducer(self)
     }
 
     public func updateUIView(_ textView: UITextView, context: Context) {
@@ -399,34 +401,9 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: UIViewRepresent
         //logger.info("SDSScrollableTextView#updateNSView <start>")
         //printSizes(scrollView)
 
-        // update delegate
-        textView.textStorage.delegate = textStorageDelegate
-        textView.textLayoutManager?.delegate = textLayoutManagerDelegate
-        // TODO: no textContentStorage in UITextView??
-        // textView.textContentStorage.delegate = textContentStorageDelegate
+        context.coordinator.parent = self
 
-        // update view content
-        if textView.textStorage.string != textDataSource.text {
-            textView.textStorage.beginEditing()
-            textView.textStorage.setAttributedString(NSAttributedString(string: textDataSource.text))
-            textView.textStorage.endEditing()
-        }
-        self.configure?(textView, textDataSource)
-    }
-
-    public class Coordinator: NSObject, UITextViewDelegate {
-        var parent: SDSScrollableTextView
-        var textView: UITextView? = nil
-        let commandTextView: PassthroughSubject<TextViewOperation, Never>?
-        var anyCancellable: AnyCancellable? = nil
-
-        init(_ parent: SDSScrollableTextView) {
-            self.parent = parent
-        }
-
-        public func textViewDidChange(_ textView: UITextView) {
-            self.parent.textDataSource.updateText(textView.text)
-        }
+        self.updateTextView?(textView, textDataSource, context.coordinator)
     }
 }
 #endif
