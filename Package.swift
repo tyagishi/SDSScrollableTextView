@@ -18,8 +18,8 @@ let package = Package(
     dependencies: [
         // Dependencies declare other packages that this package depends on.
         // .package(url: /* package url */, from: "1.0.0"),
-        .package(url: "https://github.com/tyagishi/SDSNSUIBridge", branch: "main"),
-        .package(url: "https://github.com/tyagishi/SDSStringExtension", branch: "main"),
+        .package(url: "https://github.com/tyagishi/SDSNSUIBridge", .upToNextMajor(from: .init(1, 0, 0))),
+        .package(url: "https://github.com/tyagishi/SDSStringExtension", .upToNextMajor(from: .init(1, 0, 0))),
         .package(url: "https://github.com/tyagishi/SwiftUIDebugUtil", .upToNextMajor(from: .init(2, 0, 0)))
     ],
     targets: [
