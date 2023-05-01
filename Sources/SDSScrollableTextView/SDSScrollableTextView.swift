@@ -12,17 +12,6 @@ import os
 import SDSNSUIBridge
 import SDSStringExtension
 
-#if os(macOS)
-import AppKit
-public typealias NSUITextView = NSTextView
-#elseif os(iOS)
-import UIKit
-public typealias NSUITextView = UITextView
-#else
-#error("unsupported platform")
-#endif
-
-
 public typealias ScrollableTextViewSetup = (NSUITextView, NSUIScrollView) -> Void
 public typealias ScrollableTextViewUpdate = (NSUITextView, NSUIScrollView) -> Void
 
@@ -32,8 +21,6 @@ public protocol TextViewSource: Identifiable, ObservableObject {
     func updateText(_ str: String) async
     var text: String { get async }
 }
-
-
 
 public typealias CoordinatorProducer<T: TextViewSource> = ((SDSScrollableTextView<T>) -> NSUITextViewBaseCoordinator<T>)
 
