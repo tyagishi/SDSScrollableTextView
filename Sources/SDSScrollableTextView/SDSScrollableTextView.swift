@@ -23,6 +23,9 @@ public typealias NSUITextView = UITextView
 #endif
 
 
+public typealias ScrollableTextViewSetup = (NSUITextView, NSUIScrollView) -> Void
+public typealias ScrollableTextViewUpdate = (NSUITextView, NSUIScrollView) -> Void
+
 public typealias MyOwnTextContentManager = NSTextContentManager & NSTextStorageObserving
 
 public protocol TextViewSource: Identifiable, ObservableObject {
@@ -41,6 +44,9 @@ public typealias UpdateTextView<T: TextViewSource> = (NSUITextView, T, NSUITextV
 /// wrapped NSTextView/UITextView
 public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
     @ObservedObject public var textDataSource: DataSource //MarkdownFile
+
+    let textViewSetup: ScrollableTextViewSetup
+    let textViewUpdate: ScrollableTextViewUpdate
 
     let textContentStorageDelegate: NSTextContentStorageDelegate?
     let textStorageDelegate: NSTextStorageDelegate?
@@ -67,6 +73,8 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
     ///   - sync: setup closure for setup/update
     ///   - menuClosure: menu closure (make sense only for macOS)
     public init(_ textDataSource: DataSource,
+                textViewSetup: @escaping ScrollableTextViewSetup = {_,_ in },
+                textViewUpdate: @escaping ScrollableTextViewUpdate = {_,_ in },
                 textContentStorageDelegate: NSTextContentStorageDelegate? = nil,
                 textStorageDelegate: NSTextStorageDelegate? = nil,
                 textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil,
@@ -76,6 +84,8 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
                 keydownClosure: KeyDownClosure? = nil,
                 updateTextView: UpdateTextView<DataSource>? = nil) {
         self.textDataSource = textDataSource
+        self.textViewSetup = textViewSetup
+        self.textViewUpdate = textViewUpdate
         self.textContentStorageDelegate = textContentStorageDelegate
         self.textStorageDelegate = textStorageDelegate
         self.textLayoutManagerDelegate = textLayoutManagerDelegate
@@ -93,6 +103,7 @@ public struct SDSPushOutScrollableTextView<DataSource: TextViewSource>: View {
         GeometryReader { geom in
             SDSScrollableTextView<DataSource>(textDataSource,
                                               rect: geom.frame(in: .local),
+                                              textViewSetup: textViewSetup, textViewUpdate: textViewUpdate,
                                               textContentStorageDelegate: textContentStorageDelegate,
                                               textStorageDelegate: textStorageDelegate,
                                               textLayoutManagerDelegate: textLayoutManagerDelegate,
@@ -111,7 +122,8 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
 
     @ObservedObject public var textDataSource: DataSource
     let rect: CGRect
-
+    let textViewSetup: ScrollableTextViewSetup
+    let textViewUpdate: ScrollableTextViewUpdate
     let textContentStorageDelegate: NSTextContentStorageDelegate?
     let textStorageDelegate: NSTextStorageDelegate?
     let textLayoutManagerDelegate: NSTextLayoutManagerDelegate?
@@ -131,6 +143,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
 
     public init(_ textDataSource: DataSource,
                 rect: CGRect,
+                textViewSetup: @escaping ScrollableTextViewSetup, textViewUpdate: @escaping ScrollableTextViewUpdate,
                 textContentStorageDelegate: NSTextContentStorageDelegate? = nil,
                 textStorageDelegate: NSTextStorageDelegate? = nil,
                 textLayoutManagerDelegate: NSTextLayoutManagerDelegate? = nil,
@@ -142,6 +155,8 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
                 accessibilityIdentifier: String? = nil) {
         self.textDataSource = textDataSource
         self.rect = rect
+        self.textViewSetup = textViewSetup
+        self.textViewUpdate = textViewUpdate
 
         self.textContentStorageDelegate = textContentStorageDelegate
         self.textStorageDelegate = textStorageDelegate
@@ -224,6 +239,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
         scrollView.documentView = localTextView
         //context.coordinator.textView = localTextView
 
+        self.textViewSetup(localTextView, scrollView)
         self.updateTextView?(localTextView, textDataSource, context.coordinator)
         return scrollView
     }
@@ -246,6 +262,7 @@ public struct SDSScrollableTextView<DataSource: TextViewSource>: NSViewRepresent
         context.coordinator.parent = self
         //context.coordinator.textView = textView
 
+        self.textViewUpdate(textView, scrollView)
         self.updateTextView?(textView, textDataSource, context.coordinator)
 
         // update textView size
