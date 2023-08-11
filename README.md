@@ -1,4 +1,4 @@
-merged to ScrollableTextView in SDSView.
+# moved/merged to ScrollableTextView in SDSView.
 
 # SDSScrollableTextView
 
